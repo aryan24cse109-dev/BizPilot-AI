@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  
+  body {
+    @apply bg-charcoal-950 text-slate-100 font-sans antialiased;
+    overflow-x: hidden;
+  }
+}
+
+/* Custom scrollbar for sleek fintech look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0d12;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #232b3e;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #343f56;
+}
+
+/* Glassmorphism utility classes */
+.glass-panel {
+  background: rgba(16, 20, 29, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.glass-panel-hover {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-hover:hover {
+  border-color: rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px -3px rgba(16, 185, 129, 0.1);
+}
+
+/* Subtle glow effects */
+.glow-emerald {
+  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.25);
+}
+
+.glow-teal {
+  box-shadow: 0 0 25px -5px rgba(20, 184, 166, 0.25);
+}

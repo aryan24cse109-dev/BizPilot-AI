@@ -1,0 +1,33 @@
+{
+  "name": "bizpilot-backend",
+  "version": "1.0.0",
+  "description": "BizPilot AI Backend API Service",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:push": "prisma db push",
+    "prisma:seed": "node src/scripts/seed.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.4.0",
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "pdfkit": "^0.16.0",
+    "qrcode": "^1.5.4",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "prisma": "^6.4.0",
+    "supertest": "^7.0.0",
+    "vitest": "^3.0.7"
+  }
+}
