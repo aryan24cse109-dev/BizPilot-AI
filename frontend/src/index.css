@@ -4,80 +4,89 @@
 
 @layer base {
   :root {
-    color-scheme: dark;
+    --bg-primary: #FAFAF7;
+    --bg-surface: #FFFFFF;
+    --bg-secondary: #F1F3F0;
+    --border-color: #E2E8F0;
+    --text-primary: #15191B;
+    --text-secondary: #64748B;
+    --accent-emerald: #17A673;
   }
-  
+
+  .dark {
+    --bg-primary: #15191B;
+    --bg-surface: #1C2225;
+    --bg-secondary: #22292D;
+    --border-color: #2A3338;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --accent-emerald: #17A673;
+  }
+
   body {
-    @apply bg-charcoal-950 text-slate-100 font-sans antialiased;
-    overflow-x: hidden;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 
-/* Custom scrollbar for sleek fintech look */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0a0d12;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #232b3e;
+  background: rgba(148, 163, 184, 0.2);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #343f56;
+  background: rgba(148, 163, 184, 0.4);
 }
 
-/* Glassmorphism utility classes */
-.glass-panel {
-  background: rgba(16, 20, 29, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+/* Fintech card & panel styles */
+.saas-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
 }
 
-.glass-panel-hover {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+.saas-card-interactive {
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.glass-panel-hover:hover {
-  border-color: rgba(16, 185, 129, 0.3);
+.saas-card-interactive:hover {
+  border-color: rgba(23, 166, 115, 0.4);
   transform: translateY(-1px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px -3px rgba(16, 185, 129, 0.1);
 }
 
-/* Subtle glow effects */
-.glow-emerald {
-  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.25);
-}
-
-.glow-teal {
-  box-shadow: 0 0 25px -5px rgba(20, 184, 166, 0.25);
-}
-
-/* Print Styles for Tax Invoices */
+/* Print Styles for Invoices and Receipts */
 @media print {
-  aside, header, button, .no-print {
+  aside, header, nav, button, .no-print {
     display: none !important;
   }
   
   body {
     background: #ffffff !important;
-    color: #000000 !important;
+    color: #111827 !important;
   }
 
-  .glass-panel {
+  .saas-card {
     background: #ffffff !important;
-    color: #000000 !important;
+    color: #111827 !important;
     border: none !important;
     box-shadow: none !important;
   }
 
-  .glass-panel * {
+  * {
     color: #111827 !important;
   }
 }

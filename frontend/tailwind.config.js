@@ -8,33 +8,48 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Master Design System Colors
+        canvas: {
+          light: '#FAFAF7', // Warm white
+          dark: '#15191B',  // Deep charcoal
+        },
+        surface: {
+          light: '#F1F3F0', // Secondary surface light
+          dark: '#1C2225',  // Secondary surface dark
+          darker: '#111416',
+        },
+        emerald: {
+          primary: '#17A673', // Main Emerald Accent
+          muted: '#DDF5E9',   // Light Muted Green
+          dark: '#116B4D',    // Deep Forest Green
+          hover: '#138c60',
+        },
         charcoal: {
-          950: '#0a0d12',
-          900: '#10141d',
-          800: '#171d2b',
-          700: '#232b3e',
-          600: '#343f56',
+          950: '#15191B',
+          900: '#1C2225',
+          850: '#22292D',
+          800: '#2A3338',
+          700: '#3D4950',
+          600: '#54636B',
         },
         brand: {
-          50: '#eefcf6',
-          100: '#d7f7e9',
-          200: '#b2edd3',
-          300: '#7dddb8',
-          400: '#43c498',
-          500: '#10b981', // Emerald accent
-          600: '#059669',
-          700: '#047857',
+          50: '#F2FAF6',
+          100: '#DDF5E9',
+          200: '#B4E8D1',
+          300: '#7CD6B0',
+          400: '#43BE8E',
+          500: '#17A673',
+          600: '#138C60',
+          700: '#116B4D',
         },
-        accent: {
-          teal: '#14b8a6',
-          cyan: '#06b6d4',
-          indigo: '#6366f1',
-          amber: '#f59e0b',
-          rose: '#f43f5e',
-        }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+      },
+      boxShadow: {
+        'subtle': '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03)',
+        'card': '0 4px 12px 0 rgba(0, 0, 0, 0.05)',
+        'modal': '0 20px 40px -15px rgba(0, 0, 0, 0.25)',
       }
     },
   },
