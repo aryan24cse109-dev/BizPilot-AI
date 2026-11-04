@@ -1,3 +1,4 @@
+
 import { env } from "../config/env.js";
 
 export function notFoundHandler(req, res) {
@@ -23,8 +24,14 @@ export function errorHandler(error, req, res, next) {
     console.error(error);
   }
 
-  return res.status(statusCode).json({
+  const response = {
     success: false,
     message,
-  });
+  };
+
+  if (error.details && statusCode < 500) {
+    response.details = error.details;
+  }
+
+  return res.status(statusCode).json(response);
 }

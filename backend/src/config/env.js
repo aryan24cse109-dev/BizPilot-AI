@@ -1,3 +1,4 @@
+
 import "dotenv/config";
 import { z } from "zod";
 
@@ -12,17 +13,31 @@ const envSchema = z.object({
 
   DATABASE_URL: z
     .string()
-    .min(1, "DATABASE_URL is required")
+    .min(1)
     .refine(
       (value) =>
         value.startsWith("postgresql://") ||
         value.startsWith("postgres://"),
-      "DATABASE_URL must be a PostgreSQL connection URL"
+      "Invalid PostgreSQL connection URL"
     ),
 
   FRONTEND_URL: z.string().url().default("http://localhost:5173"),
 
   AI_SERVICE_URL: z.string().url().default("http://localhost:6000"),
+
+  GOOGLE_CLIENT_ID: z.string().default(""),
+
+  JWT_SECRET: z.string().min(32, "JWT_SECRET must contain at least 32 characters"),
+
+  SESSION_COOKIE_NAME: z.string().default("bizpilot_session"),
+
+  SESSION_DURATION_DAYS: z.coerce.number().int().min(1).max(30).default(7),
+
+  EMAIL_PROVIDER: z.enum(["console", "resend"]).default("console"),
+
+  EMAIL_API_KEY: z.string().default(""),
+
+  EMAIL_FROM: z.string().default(""),
 });
 
 const result = envSchema.safeParse(process.env);
