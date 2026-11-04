@@ -58,3 +58,26 @@
 .glow-teal {
   box-shadow: 0 0 25px -5px rgba(20, 184, 166, 0.25);
 }
+
+/* Print Styles for Tax Invoices */
+@media print {
+  aside, header, button, .no-print {
+    display: none !important;
+  }
+  
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .glass-panel {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .glass-panel * {
+    color: #111827 !important;
+  }
+}

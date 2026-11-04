@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import api from '../api/client.js';
 import { Button } from '../components/common/Button.jsx';
 import { Input } from '../components/common/Input.jsx';
@@ -15,6 +16,7 @@ import {
 
 export const SettingsPage = () => {
   const { user, activeWorkspace } = useAuth();
+  const toast = useToast();
   const [profileData, setProfileData] = useState({
     businessName: activeWorkspace?.name || '',
     businessType: 'Agency',
@@ -56,8 +58,9 @@ export const SettingsPage = () => {
     try {
       await api.put('/workspaces/current/profile', profileData);
       setSaved(true);
+      toast.success('Settings Saved', 'Business profile and payment instructions updated successfully.');
     } catch (err) {
-      alert(err.message || 'Failed to update business profile.');
+      toast.error('Update Failed', err.message || 'Failed to update business profile.');
     } finally {
       setSaving(false);
     }
