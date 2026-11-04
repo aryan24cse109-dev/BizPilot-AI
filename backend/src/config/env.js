@@ -38,6 +38,10 @@ const envSchema = z.object({
   EMAIL_API_KEY: z.string().default(""),
 
   EMAIL_FROM: z.string().default(""),
+
+  RAZORPAY_KEY_ID: z.string().default(""),
+  RAZORPAY_KEY_SECRET: z.string().default(""),
+  RAZORPAY_WEBHOOK_SECRET: z.string().default(""),
 });
 
 const result = envSchema.safeParse(process.env);

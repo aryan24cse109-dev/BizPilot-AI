@@ -14,6 +14,11 @@ import connectionRoutes from "./modules/connections/connection.routes.js";
 import invitationRoutes from "./modules/invitations/invitation.routes.js";
 
 import invoiceRoutes from "./modules/invoices/invoice.routes.js";
+import paymentRoutes, {
+  paymentWebhookRouter,
+} from "./modules/payments/payment.routes.js";
+import dashboardRoutes from "./modules/dashboard/dashboard.routes.js";
+import assistantRoutes from "./modules/assistant/assistant.routes.js";
 
 import {
   notFoundHandler,
@@ -33,6 +38,12 @@ app.use(
   })
 );
 
+// Webhooks must receive the exact bytes signed by Razorpay.
+app.use(
+  `${env.API_PREFIX}/payments/webhooks`,
+  express.raw({ type: "application/json", limit: "1mb" }),
+  paymentWebhookRouter,
+);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -85,6 +96,9 @@ app.use(`${env.API_PREFIX}/business`, businessRoutes);
 app.use(`${env.API_PREFIX}/connections`, connectionRoutes);
 app.use(`${env.API_PREFIX}/invitations`, invitationRoutes);
 app.use(`${env.API_PREFIX}/invoices`, invoiceRoutes);
+app.use(`${env.API_PREFIX}/payments`, paymentRoutes);
+app.use(`${env.API_PREFIX}/dashboard`, dashboardRoutes);
+app.use(`${env.API_PREFIX}/assistant`, assistantRoutes);
 // Error handling
 app.use(notFoundHandler);
 app.use(errorHandler);
