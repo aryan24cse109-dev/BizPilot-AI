@@ -17,9 +17,32 @@ function ensureBusiness(user) {
   }
 }
 
-function ensureClient(user) {
-  // In dual-role architecture, any authenticated user can act as a client
-  return true;
+async function ensureClient(user) {
+  if (user.accountCategory === "CLIENT") return true;
+  if (user.roleCapabilities?.hasClientAccess) return true;
+
+  const normalizedEmail = (user.email || "").toLowerCase().trim();
+  const count = await prisma.invoice.count({
+    where: {
+      businessUserId: { not: user.id },
+      OR: [
+        { clientUserId: user.id },
+        { clientEmail: normalizedEmail },
+      ],
+    },
+  });
+  if (count > 0) return true;
+
+  const connCount = await prisma.connection.count({
+    where: {
+      clientUserId: user.id,
+      businessUserId: { not: user.id },
+      status: "ACTIVE",
+    },
+  });
+  if (connCount > 0) return true;
+
+  throw new ApiError(403, "You do not have access to client portal records.");
 }
 
 function generateInvoiceNumber() {
@@ -305,12 +328,15 @@ export async function listInvoices(user, filters = {}) {
   const requestedRole = (filters.role || filters.type || "").toLowerCase();
 
   if (requestedRole === "client") {
-    // Client view: invoices issued to this user
+    await ensureClient(user);
+    // Client view: invoices issued to this user by other businesses
+    where.businessUserId = { not: user.id };
     where.OR = [
       { clientUserId: user.id },
       { clientEmail: user.email.toLowerCase().trim() },
     ];
   } else if (requestedRole === "business") {
+    ensureBusiness(user);
     // Business view: invoices created by this business user
     where.businessUserId = user.id;
   } else {

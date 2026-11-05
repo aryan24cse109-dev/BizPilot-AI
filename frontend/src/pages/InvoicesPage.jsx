@@ -465,17 +465,17 @@ export const InvoicesPage = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         title="Create Digital Tax Invoice"
-        size="2xl"
+        maxWidth="max-w-2xl"
       >
         <div className="space-y-4">
           {/* Modal Tabs */}
-          <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2 border-b border-[#E8E4DC] pb-3">
             <button
               type="button"
               onClick={() => setModalTab('edit')}
-              className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition ${modalTab === 'edit'
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                  : 'text-slate-400 hover:text-white'
+              className={`text-xs px-3.5 py-1.5 rounded-xl font-bold transition ${modalTab === 'edit'
+                  ? 'bg-[#1C1D22] text-white shadow-xs'
+                  : 'text-[#8E9297] hover:text-[#1C1D22] hover:bg-[#FAF8F5]'
                 }`}
             >
               Invoice Editor
@@ -483,9 +483,9 @@ export const InvoicesPage = () => {
             <button
               type="button"
               onClick={() => setModalTab('preview')}
-              className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5 ${modalTab === 'preview'
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                  : 'text-slate-400 hover:text-white'
+              className={`text-xs px-3.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${modalTab === 'preview'
+                  ? 'bg-[#1C1D22] text-white shadow-xs'
+                  : 'text-[#8E9297] hover:text-[#1C1D22] hover:bg-[#FAF8F5]'
                 }`}
             >
               <Eye className="w-3.5 h-3.5" /> Live Preview
@@ -495,21 +495,21 @@ export const InvoicesPage = () => {
           {modalTab === 'edit' ? (
             <div className="space-y-4">
               {/* Client Selection / Direct Input */}
-              <div className="p-4 rounded-2xl bg-charcoal-950 border border-slate-800 space-y-3">
+              <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-[#E8E4DC] space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-emerald-400" />
-                    Billed Client Details <span className="text-emerald-400">*</span>
+                  <label className="text-xs font-bold text-[#1C1D22] flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[#1C1D22]" />
+                    Billed Client Details <span className="text-amber-600">*</span>
                   </label>
 
-                  <div className="flex items-center gap-1.5 p-1 bg-charcoal-900 rounded-lg border border-slate-800">
+                  <div className="flex items-center gap-1 p-1 bg-[#EFECE6] rounded-xl border border-[#E8E4DC]">
                     <button
                       type="button"
                       onClick={() => setClientMode('select')}
-                      className={`text-[11px] px-2.5 py-1 rounded-md font-semibold transition ${
+                      className={`text-[11px] px-2.5 py-1 rounded-lg font-bold transition ${
                         clientMode === 'select'
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                          : 'text-slate-400 hover:text-white'
+                          ? 'bg-white text-[#1C1D22] shadow-xs'
+                          : 'text-[#8E9297] hover:text-[#1C1D22]'
                       }`}
                     >
                       Client List ({clients.length})
@@ -517,10 +517,10 @@ export const InvoicesPage = () => {
                     <button
                       type="button"
                       onClick={() => setClientMode('new')}
-                      className={`text-[11px] px-2.5 py-1 rounded-md font-semibold transition ${
+                      className={`text-[11px] px-2.5 py-1 rounded-lg font-bold transition ${
                         clientMode === 'new'
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                          : 'text-slate-400 hover:text-white'
+                          ? 'bg-white text-[#1C1D22] shadow-xs'
+                          : 'text-[#8E9297] hover:text-[#1C1D22]'
                       }`}
                     >
                       + Enter New Client
@@ -530,13 +530,13 @@ export const InvoicesPage = () => {
 
                 {clientMode === 'select' && clients.length > 0 ? (
                   <div>
-                    <label className="block text-[11px] text-slate-400 mb-1">
+                    <label className="block text-[11px] font-semibold text-[#8E9297] mb-1">
                       Choose from your client directory:
                     </label>
                     <select
                       value={selectedClientId}
                       onChange={(e) => setSelectedClientId(e.target.value)}
-                      className="w-full bg-charcoal-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-white border border-[#E8E4DC] rounded-xl px-3 py-2 text-xs text-[#1C1D22] font-medium focus:outline-none focus:border-[#1C1D22]"
                     >
                       {clients.map((c) => (
                         <option key={c.id || c.email} value={c.id || c.email}>
@@ -548,28 +548,28 @@ export const InvoicesPage = () => {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">Client Full Name *</label>
+                      <label className="block text-[11px] font-semibold text-[#8E9297] mb-1">Client Full Name *</label>
                       <input
                         type="text"
                         placeholder="e.g. Rahul Sharma"
                         value={customClientName}
                         onChange={(e) => setCustomClientName(e.target.value)}
-                        className="w-full bg-charcoal-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-white border border-[#E8E4DC] rounded-xl px-3 py-2 text-xs text-[#1C1D22] placeholder-[#8E9297] focus:outline-none focus:border-[#1C1D22]"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">Client Email Address *</label>
+                      <label className="block text-[11px] font-semibold text-[#8E9297] mb-1">Client Email Address *</label>
                       <input
                         type="email"
                         placeholder="e.g. rahul@clientcorp.com"
                         value={customClientEmail}
                         onChange={(e) => setCustomClientEmail(e.target.value)}
-                        className="w-full bg-charcoal-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-white border border-[#E8E4DC] rounded-xl px-3 py-2 text-xs text-[#1C1D22] placeholder-[#8E9297] focus:outline-none focus:border-[#1C1D22]"
                         required
                       />
                     </div>
-                    <div className="sm:col-span-2 text-[10px] text-slate-400">
+                    <div className="sm:col-span-2 text-[10px] text-[#8E9297]">
                       ℹ️ The client will automatically receive an onboarding invitation. When they sign in with this email, the invoice will automatically link to their account.
                     </div>
                   </div>
@@ -579,32 +579,32 @@ export const InvoicesPage = () => {
               {/* Due Date & Currency */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Due Date <span className="text-emerald-400">*</span>
+                  <label className="block text-xs font-bold text-[#1C1D22] mb-1.5">
+                    Due Date <span className="text-amber-600">*</span>
                   </label>
                   <input
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full bg-charcoal-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-white border border-[#E8E4DC] rounded-xl px-3 py-2 text-xs text-[#1C1D22] focus:outline-none focus:border-[#1C1D22]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label className="block text-xs font-bold text-[#1C1D22] mb-1.5">
                     Currency
                   </label>
                   <input
                     type="text"
                     value={currency}
                     disabled
-                    className="w-full bg-charcoal-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-400 cursor-not-allowed"
+                    className="w-full bg-[#EFECE6] border border-[#E8E4DC] rounded-xl px-3 py-2 text-xs text-[#8E9297] font-bold cursor-not-allowed"
                   />
                 </div>
               </div>
 
               {/* Preset Item Chips */}
               <div>
-                <span className="text-[11px] font-semibold text-slate-400 block mb-1.5">Quick Add Preset Services:</span>
+                <span className="text-[11px] font-bold text-[#8E9297] block mb-1.5">Quick Add Preset Services:</span>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { description: 'Full-Stack Web Application Retainer', quantity: 1, unitPrice: 25000 },
@@ -616,9 +616,9 @@ export const InvoicesPage = () => {
                       key={idx}
                       type="button"
                       onClick={() => addPresetItem(preset)}
-                      className="text-[11px] px-2.5 py-1 rounded-lg bg-charcoal-800 hover:bg-emerald-500/15 hover:text-emerald-300 text-slate-300 border border-slate-700/60 transition flex items-center gap-1"
+                      className="text-[11px] px-2.5 py-1 rounded-xl bg-[#FAF8F5] hover:bg-[#F5C869]/20 hover:text-[#1C1D22] text-[#1C1D22] border border-[#E8E4DC] transition flex items-center gap-1 font-semibold"
                     >
-                      <Plus className="w-3 h-3 text-emerald-400" /> {preset.description.split(' ')[0]} (₹{preset.unitPrice.toLocaleString('en-IN')})
+                      <Plus className="w-3 h-3 text-[#1C1D22]" /> {preset.description.split(' ')[0]} (₹{preset.unitPrice.toLocaleString('en-IN')})
                     </button>
                   ))}
                 </div>
@@ -627,11 +627,11 @@ export const InvoicesPage = () => {
               {/* Line Items Table */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold text-slate-200">Billable Line Items</label>
+                  <label className="text-xs font-bold text-[#1C1D22]">Billable Line Items</label>
                   <button
                     type="button"
                     onClick={addItem}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
+                    className="text-xs text-[#1C1D22] hover:text-[#F5C869] font-bold flex items-center gap-1 transition"
                   >
                     <Plus className="w-3.5 h-3.5" /> Add Item
                   </button>
@@ -639,13 +639,13 @@ export const InvoicesPage = () => {
 
                 <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
                   {items.map((item, index) => (
-                    <div key={index} className="flex items-center gap-2 bg-charcoal-950 p-2 rounded-xl border border-slate-800">
+                    <div key={index} className="flex items-center gap-2 bg-[#FAF8F5] p-2.5 rounded-2xl border border-[#E8E4DC]">
                       <input
                         type="text"
                         placeholder="Item or service description"
                         value={item.description}
                         onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                        className="flex-1 bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none"
+                        className="flex-1 bg-transparent text-xs text-[#1C1D22] placeholder-[#8E9297] font-medium focus:outline-none"
                       />
                       <input
                         type="number"
@@ -653,22 +653,22 @@ export const InvoicesPage = () => {
                         placeholder="Qty"
                         value={item.quantity}
                         onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                        className="w-14 bg-charcoal-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-center text-white focus:outline-none focus:border-emerald-500"
+                        className="w-14 bg-white border border-[#E8E4DC] rounded-xl px-2 py-1 text-xs text-center text-[#1C1D22] font-semibold focus:outline-none focus:border-[#1C1D22]"
                       />
-                      <span className="text-xs text-slate-400">× ₹</span>
+                      <span className="text-xs text-[#8E9297] font-semibold">× ₹</span>
                       <input
                         type="number"
                         min="0"
                         placeholder="Price"
                         value={item.unitPrice}
                         onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-                        className="w-24 bg-charcoal-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-right font-mono text-white focus:outline-none focus:border-emerald-500"
+                        className="w-24 bg-white border border-[#E8E4DC] rounded-xl px-2 py-1 text-xs text-right font-mono font-semibold text-[#1C1D22] focus:outline-none focus:border-[#1C1D22]"
                       />
                       {items.length > 1 && (
                         <button
                           type="button"
                           onClick={() => removeItem(index)}
-                          className="text-slate-500 hover:text-rose-400 p-1"
+                          className="text-[#8E9297] hover:text-rose-600 p-1 transition"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -681,13 +681,13 @@ export const InvoicesPage = () => {
               {/* Tax & Discount Options */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                  <label className="block text-[11px] font-bold text-[#8E9297] mb-1">
                     GST Rate (%):
                   </label>
                   <select
                     value={taxRate}
                     onChange={(e) => setTaxRate(Number(e.target.value))}
-                    className="w-full bg-charcoal-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-white border border-[#E8E4DC] rounded-xl px-3 py-2 text-xs text-[#1C1D22] font-medium focus:outline-none focus:border-[#1C1D22]"
                   >
                     <option value={0}>0% (Exempt)</option>
                     <option value={5}>5% GST</option>
@@ -697,7 +697,7 @@ export const InvoicesPage = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                  <label className="block text-[11px] font-bold text-[#8E9297] mb-1">
                     Discount (%):
                   </label>
                   <input
@@ -706,43 +706,43 @@ export const InvoicesPage = () => {
                     max="100"
                     value={discountRate}
                     onChange={(e) => setDiscountRate(Number(e.target.value))}
-                    className="w-full bg-charcoal-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-white border border-[#E8E4DC] rounded-xl px-3 py-2 text-xs text-[#1C1D22] font-mono font-medium focus:outline-none focus:border-[#1C1D22]"
                   />
                 </div>
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                <label className="block text-[11px] font-bold text-[#8E9297] mb-1">
                   Payment Instructions & Notes:
                 </label>
                 <textarea
                   rows={2}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full bg-charcoal-950 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 resize-none"
+                  className="w-full bg-white border border-[#E8E4DC] rounded-xl p-2.5 text-xs text-[#1C1D22] placeholder-[#8E9297] font-medium focus:outline-none focus:border-[#1C1D22] resize-none"
                 />
               </div>
 
               {/* Live Calculation Preview Banner */}
-              <div className="p-3.5 rounded-xl bg-charcoal-950 border border-slate-800 space-y-1 text-xs">
-                <div className="flex justify-between text-slate-400">
+              <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-[#E8E4DC] space-y-1.5 text-xs">
+                <div className="flex justify-between text-[#8E9297] font-medium">
                   <span>Subtotal:</span>
-                  <span className="font-mono text-slate-200">₹{subtotal.toLocaleString('en-IN')}</span>
+                  <span className="font-mono text-[#1C1D22] font-bold">₹{subtotal.toLocaleString('en-IN')}</span>
                 </div>
                 {taxRate > 0 && (
-                  <div className="flex justify-between text-slate-400">
+                  <div className="flex justify-between text-[#8E9297] font-medium">
                     <span>GST ({taxRate}%):</span>
-                    <span className="font-mono text-slate-200">₹{taxAmount.toLocaleString('en-IN')}</span>
+                    <span className="font-mono text-[#1C1D22] font-bold">₹{taxAmount.toLocaleString('en-IN')}</span>
                   </div>
                 )}
                 {discountRate > 0 && (
-                  <div className="flex justify-between text-slate-400">
+                  <div className="flex justify-between text-[#8E9297] font-medium">
                     <span>Discount ({discountRate}%):</span>
-                    <span className="font-mono text-rose-400">-₹{discountAmount.toLocaleString('en-IN')}</span>
+                    <span className="font-mono text-rose-600 font-bold">-₹{discountAmount.toLocaleString('en-IN')}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-emerald-400 font-bold text-sm pt-1.5 border-t border-slate-800">
+                <div className="flex justify-between text-[#1C1D22] font-black text-sm pt-2 border-t border-[#E8E4DC]">
                   <span>Grand Total:</span>
                   <span className="font-mono">₹{grandTotal.toLocaleString('en-IN')}</span>
                 </div>
@@ -750,45 +750,45 @@ export const InvoicesPage = () => {
             </div>
           ) : (
             /* Live Digital Tax Invoice Preview Tab */
-            <div className="p-5 rounded-2xl bg-charcoal-950 border border-slate-800 text-xs space-y-4">
-              <div className="flex justify-between items-start border-b border-slate-800 pb-3">
+            <div className="p-5 rounded-2xl bg-[#FAF8F5] border border-[#E8E4DC] text-xs space-y-4 text-[#1C1D22]">
+              <div className="flex justify-between items-start border-b border-[#E8E4DC] pb-3">
                 <div>
-                  <h3 className="text-base font-bold text-white">{activeWorkspace?.name || 'TechNova Solutions'}</h3>
-                  <p className="text-slate-400 text-[11px]">GSTIN: 29ABCDE1234F1Z5</p>
-                  <p className="text-slate-400 text-[11px]">Bengaluru, Karnataka, India</p>
+                  <h3 className="text-base font-black text-[#1C1D22]">{activeWorkspace?.name || 'TechNova Solutions'}</h3>
+                  <p className="text-[#8E9297] text-[11px] font-medium">GSTIN: 29ABCDE1234F1Z5</p>
+                  <p className="text-[#8E9297] text-[11px] font-medium">Bengaluru, Karnataka, India</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-[#F5C869]/20 text-[#1C1D22] border border-[#E5B550] uppercase font-bold">
                     Tax Invoice Preview
                   </span>
-                  <p className="font-mono text-slate-200 font-bold mt-1">INV-{Date.now().toString().slice(-6)}</p>
-                  <p className="text-slate-400 text-[10px]">Due: {dueDate}</p>
+                  <p className="font-mono text-[#1C1D22] font-black mt-1">INV-{Date.now().toString().slice(-6)}</p>
+                  <p className="text-[#8E9297] text-[10px] font-medium">Due: {dueDate}</p>
                 </div>
               </div>
 
               <div>
-                <span className="text-slate-400 text-[10px] uppercase font-semibold">Billed To:</span>
-                <p className="font-bold text-slate-100 text-sm">{selectedClientObj?.name || 'Selected Client'}</p>
-                <p className="text-slate-400 text-[11px]">{selectedClientObj?.email || 'client@email.com'}</p>
+                <span className="text-[#8E9297] text-[10px] uppercase font-bold tracking-wider">Billed To:</span>
+                <p className="font-black text-[#1C1D22] text-sm mt-0.5">{selectedClientObj?.name || 'Selected Client'}</p>
+                <p className="text-[#8E9297] text-[11px] font-medium">{selectedClientObj?.email || 'client@email.com'}</p>
               </div>
 
-              <div className="rounded-xl border border-slate-800 overflow-hidden">
+              <div className="rounded-2xl border border-[#E8E4DC] overflow-hidden bg-white">
                 <table className="w-full text-left">
-                  <thead className="bg-charcoal-900 text-slate-400 border-b border-slate-800 text-[11px]">
+                  <thead className="bg-[#EFECE6] text-[#1C1D22] border-b border-[#E8E4DC] text-[11px] font-bold">
                     <tr>
-                      <th className="py-2 px-3">Item</th>
-                      <th className="py-2 px-3 text-center">Qty</th>
-                      <th className="py-2 px-3 text-right">Rate</th>
-                      <th className="py-2 px-3 text-right">Amount</th>
+                      <th className="py-2.5 px-3">Item</th>
+                      <th className="py-2.5 px-3 text-center">Qty</th>
+                      <th className="py-2.5 px-3 text-right">Rate</th>
+                      <th className="py-2.5 px-3 text-right">Amount</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60">
+                  <tbody className="divide-y divide-[#E8E4DC]">
                     {items.map((it, idx) => (
-                      <tr key={idx}>
-                        <td className="py-2 px-3 text-slate-200">{it.description || 'Service'}</td>
-                        <td className="py-2 px-3 text-center text-slate-300">{it.quantity}</td>
-                        <td className="py-2 px-3 text-right font-mono text-slate-300">₹{Number(it.unitPrice).toLocaleString('en-IN')}</td>
-                        <td className="py-2 px-3 text-right font-mono font-semibold text-slate-100">
+                      <tr key={idx} className="hover:bg-[#FAF8F5]/50 transition">
+                        <td className="py-2.5 px-3 text-[#1C1D22] font-medium">{it.description || 'Service'}</td>
+                        <td className="py-2.5 px-3 text-center text-[#1C1D22] font-semibold">{it.quantity}</td>
+                        <td className="py-2.5 px-3 text-right font-mono text-[#1C1D22]">₹{Number(it.unitPrice).toLocaleString('en-IN')}</td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-[#1C1D22]">
                           ₹{(Number(it.quantity) * Number(it.unitPrice)).toLocaleString('en-IN')}
                         </td>
                       </tr>
@@ -798,17 +798,17 @@ export const InvoicesPage = () => {
               </div>
 
               <div className="flex justify-between items-center pt-2">
-                <span className="text-xs text-slate-400 italic">{notes}</span>
+                <span className="text-xs text-[#8E9297] italic">{notes}</span>
                 <div className="text-right font-mono">
-                  <span className="text-xs text-slate-400 block">Total Payable</span>
-                  <span className="text-base font-bold text-emerald-400">₹{grandTotal.toLocaleString('en-IN')}</span>
+                  <span className="text-xs text-[#8E9297] block font-sans font-semibold">Total Payable</span>
+                  <span className="text-lg font-black text-[#1C1D22]">₹{grandTotal.toLocaleString('en-IN')}</span>
                 </div>
               </div>
             </div>
           )}
 
           {/* Modal Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E8E4DC]">
             <Button
               variant="secondary"
               size="md"
@@ -832,7 +832,7 @@ export const InvoicesPage = () => {
               onClick={() => handleCreateInvoice(false)}
               loading={submitting}
             >
-              Issue & Send Immediately (₹{grandTotal.toLocaleString('en-IN')})
+              Issue & Send (₹{grandTotal.toLocaleString('en-IN')})
             </Button>
           </div>
         </div>

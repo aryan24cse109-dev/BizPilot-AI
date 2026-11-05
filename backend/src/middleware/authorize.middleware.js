@@ -1,34 +1,49 @@
 import { ApiError } from "../utils/ApiError.js";
+import { computeUserRoleCapabilities } from "../modules/auth/auth.service.js";
 
 export function authorize(...allowedCategories) {
-  return (req, res, next) => {
-    if (!req.user) {
-      return next(new ApiError(401, "Authentication required."));
-    }
-
-    // Dual-role authorization:
-    // 1. Any authenticated user can act as a CLIENT
-    if (allowedCategories.includes("CLIENT")) {
-      return next();
-    }
-
-    // 2. A user can act as BUSINESS if they have BUSINESS category or a business profile
-    if (allowedCategories.includes("BUSINESS")) {
-      if (req.user.accountCategory === "BUSINESS" || req.user.businessProfile) {
-        return next();
+  return async (req, res, next) => {
+    try {
+      if (!req.user) {
+        return next(new ApiError(401, "Authentication required."));
       }
-      return next(
-        new ApiError(403, "A business account or business profile is required.")
-      );
-    }
 
-    if (!allowedCategories.includes(req.user.accountCategory)) {
-      return next(
-        new ApiError(403, "You are not authorized to perform this action.")
-      );
-    }
+      // Resolve capabilities dynamically from actual business ownership & relationships
+      const capabilities =
+        req.user.roleCapabilities ||
+        (await computeUserRoleCapabilities(req.user));
+      req.user.roleCapabilities = capabilities;
 
-    next();
+      // 1. Check Business Access
+      if (allowedCategories.includes("BUSINESS")) {
+        if (capabilities.hasBusinessAccess) {
+          return next();
+        }
+        return next(
+          new ApiError(403, "A business workspace is required to access this resource.")
+        );
+      }
+
+      // 2. Check Client Access
+      if (allowedCategories.includes("CLIENT")) {
+        if (capabilities.hasClientAccess) {
+          return next();
+        }
+        return next(
+          new ApiError(403, "Client access is restricted to registered clients or invoice recipients.")
+        );
+      }
+
+      if (!allowedCategories.includes(req.user.accountCategory)) {
+        return next(
+          new ApiError(403, "You are not authorized to perform this action.")
+        );
+      }
+
+      next();
+    } catch (err) {
+      next(err);
+    }
   };
 }
 

@@ -19,9 +19,10 @@ export const AuthProvider = ({ children }) => {
         if (response?.data?.user) {
           const userData = response.data.user;
           setUser(userData);
-          const userRole = (userData.accountCategory || 'BUSINESS').toLowerCase();
-          setActiveRole(userRole);
-          localStorage.setItem('bizpilot_active_role', userRole);
+          const navMode = userData.roleCapabilities?.navigationMode || userData.navigationMode;
+          const defaultRole = navMode === 'CLIENT_ONLY' ? 'client' : 'business';
+          setActiveRole(defaultRole);
+          localStorage.setItem('bizpilot_active_role', defaultRole);
 
           if (userData.businessProfile?.businessName) {
             const ws = { id: userData.id, name: userData.businessProfile.businessName };
@@ -65,7 +66,8 @@ export const AuthProvider = ({ children }) => {
       if (token) localStorage.setItem('bizpilot_token', token);
       setUser(loggedInUser);
 
-      const userRole = (loggedInUser.accountCategory || accountCategory).toLowerCase();
+      const navMode = loggedInUser.roleCapabilities?.navigationMode || loggedInUser.navigationMode;
+      const userRole = navMode === 'CLIENT_ONLY' ? 'client' : 'business';
       setActiveRole(userRole);
       localStorage.setItem('bizpilot_active_role', userRole);
 
@@ -89,7 +91,8 @@ export const AuthProvider = ({ children }) => {
       if (token) localStorage.setItem('bizpilot_token', token);
       setUser(loggedInUser);
 
-      const userRole = (loggedInUser.accountCategory || accountCategory).toLowerCase();
+      const navMode = loggedInUser.roleCapabilities?.navigationMode || loggedInUser.navigationMode;
+      const userRole = navMode === 'CLIENT_ONLY' ? 'client' : 'business';
       setActiveRole(userRole);
       localStorage.setItem('bizpilot_active_role', userRole);
       return loggedInUser;

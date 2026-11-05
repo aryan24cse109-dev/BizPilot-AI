@@ -35,7 +35,12 @@ export async function authenticate(req, res, next) {
     const session = await prisma.authSession.findUnique({
       where: { id: decoded.sid },
       include: {
-        user: true,
+        user: {
+          include: {
+            businessProfile: true,
+            clientProfile: true,
+          },
+        },
       },
     });
 

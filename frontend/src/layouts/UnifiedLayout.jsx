@@ -61,12 +61,35 @@ export const UnifiedLayout = () => {
     { name: 'Profile', path: '/portal/profile', icon: User },
   ];
 
+  // Dynamic Role Mode Resolution
+  // 1. Business Owner Only: owns business workspace and has NO client relationships
+  // 2. Client Only: registered as client and has NO business workspace
+  // 3. Dual-Role User: owns business workspace AND is registered as a client of another business owner
+  const isBusinessOwner = user?.roleCapabilities?.isBusinessOwner ?? (
+    user?.accountCategory === 'BUSINESS' || Boolean(user?.businessProfile)
+  );
+
+  const isClient = user?.roleCapabilities?.isClient ?? (
+    user?.accountCategory === 'CLIENT' || Boolean(user?.roleCapabilities?.clientInvoicesCount > 0)
+  );
+
+  const navigationMode = user?.roleCapabilities?.navigationMode || (
+    isBusinessOwner && isClient
+      ? 'DUAL_ROLE'
+      : isBusinessOwner
+        ? 'BUSINESS_ONLY'
+        : 'CLIENT_ONLY'
+  );
+
+  const showBusinessSection = navigationMode === 'DUAL_ROLE' || navigationMode === 'BUSINESS_ONLY';
+  const showClientSection = navigationMode === 'DUAL_ROLE' || navigationMode === 'CLIENT_ONLY';
+
   const isClientView = location.pathname.startsWith('/portal');
 
   return (
     <div className="min-h-screen w-full flex bg-[#F7F5F0] text-[#1C1D22] font-sans antialiased">
       {/* ======================================================== */}
-      {/* UNIFIED DUAL-ROLE SIDEBAR (#1C1D22)                     */}
+      {/* DYNAMIC ROLE-BASED SIDEBAR (#1C1D22)                     */}
       {/* ======================================================== */}
       <aside
         className="w-64 h-screen sticky top-0 shrink-0 select-none flex flex-col justify-between p-4 z-30 border-r"
@@ -79,16 +102,39 @@ export const UnifiedLayout = () => {
               className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-md shrink-0"
               style={{ backgroundColor: '#2C2D35', border: '1px solid rgba(255, 255, 255, 0.12)' }}
             >
-              <div className="w-5 h-5 rounded-md bg-[#F5C869] flex items-center justify-center text-[#1C1D22] font-black text-xs">
-                BP
-              </div>
+              {navigationMode === 'CLIENT_ONLY' ? (
+                <ShieldCheck className="w-5 h-5 text-[#CFDDC8]" />
+              ) : (
+                <div className="w-5 h-5 rounded-md bg-[#F5C869] flex items-center justify-center text-[#1C1D22] font-black text-xs">
+                  BP
+                </div>
+              )}
             </div>
             <div className="min-w-0">
               <h1 className="text-base font-black tracking-tight text-white leading-tight truncate">
-                BizPilot <span style={{ color: '#F5C869' }}>AI</span>
+                BizPilot <span style={{ color: navigationMode === 'CLIENT_ONLY' ? '#CFDDC8' : '#F5C869' }}>
+                  {navigationMode === 'CLIENT_ONLY' ? 'Portal' : 'AI'}
+                </span>
               </h1>
               <p className="text-[10px] font-medium leading-tight flex items-center gap-1.5 mt-0.5" style={{ color: '#8E9297' }}>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Dual Role Workspace
+                {navigationMode === 'DUAL_ROLE' && (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span>Dual Role Workspace</span>
+                  </>
+                )}
+                {navigationMode === 'BUSINESS_ONLY' && (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#F5C869]" />
+                    <span>Business Workspace</span>
+                  </>
+                )}
+                {navigationMode === 'CLIENT_ONLY' && (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#CFDDC8]" />
+                    <span>Client Portal</span>
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -105,117 +151,132 @@ export const UnifiedLayout = () => {
               <p className="text-xs font-bold text-white truncate leading-tight">
                 {user?.fullName || user?.name || 'Authorized User'}
               </p>
-              <p className="text-[10px] text-[#8E9297] truncate font-mono">
-                {user?.email}
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-[10px] text-[#8E9297] truncate font-mono">
+                  {user?.email}
+                </span>
+              </div>
+              <p className="text-[9px] font-semibold text-emerald-400 mt-0.5">
+                {navigationMode === 'DUAL_ROLE' && 'Owner & Client'}
+                {navigationMode === 'BUSINESS_ONLY' && 'Business Owner'}
+                {navigationMode === 'CLIENT_ONLY' && 'Client Account'}
               </p>
             </div>
           </div>
 
-          {/* Unified Navigation List (Scrollable) */}
+          {/* Navigation List (Scrollable) */}
           <nav className="overflow-y-auto flex-1 pr-1 space-y-4 custom-scroll">
             {/* SECTION 1: BUSINESS WORKSPACE */}
-            <div>
-              <div className="flex items-center justify-between px-3 py-1 mb-1.5">
-                <span className="text-[10px] font-black tracking-wider uppercase flex items-center gap-1.5 text-[#F5C869]">
-                  <Briefcase className="w-3 h-3" /> Business Workspace
-                </span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#F5C869]/20 text-[#F5C869] font-bold">
-                  PRO
-                </span>
-              </div>
+            {showBusinessSection && (
+              <div>
+                {navigationMode === 'DUAL_ROLE' && (
+                  <div className="flex items-center justify-between px-3 py-1 mb-1.5">
+                    <span className="text-[10px] font-black tracking-wider uppercase flex items-center gap-1.5 text-[#F5C869]">
+                      <Briefcase className="w-3 h-3" /> Business Workspace
+                    </span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#F5C869]/20 text-[#F5C869] font-bold">
+                      PRO
+                    </span>
+                  </div>
+                )}
 
-              <div className="space-y-0.5">
-                {businessNavItems.map((item) => {
-                  const isActive = item.exact
-                    ? location.pathname === item.path
-                    : location.pathname.startsWith(item.path);
+                <div className="space-y-0.5">
+                  {businessNavItems.map((item) => {
+                    const isActive = item.exact
+                      ? location.pathname === item.path
+                      : location.pathname.startsWith(item.path);
 
-                  return (
-                    <NavLink
-                      key={`biz_${item.name}`}
-                      to={item.path}
-                      className="relative flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150"
-                      style={{
-                        color: isActive ? '#F5C869' : '#8E9297',
-                        backgroundColor: isActive ? 'rgba(245, 200, 105, 0.12)' : 'transparent',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isActive) e.currentTarget.style.color = '#FFFFFF';
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive) e.currentTarget.style.color = '#8E9297';
-                      }}
-                    >
-                      {isActive && (
-                        <span
-                          className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full"
-                          style={{ backgroundColor: '#F5C869' }}
-                        />
-                      )}
-                      <div className="flex items-center gap-2.5">
-                        <item.icon
-                          className="w-4 h-4 shrink-0 transition-colors"
-                          style={{ color: isActive ? '#F5C869' : '#8E9297' }}
-                        />
-                        <span>{item.name}</span>
-                      </div>
-                    </NavLink>
-                  );
-                })}
+                    return (
+                      <NavLink
+                        key={`biz_${item.name}`}
+                        to={item.path}
+                        className="relative flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150"
+                        style={{
+                          color: isActive ? '#F5C869' : '#8E9297',
+                          backgroundColor: isActive ? 'rgba(245, 200, 105, 0.12)' : 'transparent',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isActive) e.currentTarget.style.color = '#FFFFFF';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isActive) e.currentTarget.style.color = '#8E9297';
+                        }}
+                      >
+                        {isActive && (
+                          <span
+                            className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full"
+                            style={{ backgroundColor: '#F5C869' }}
+                          />
+                        )}
+                        <div className="flex items-center gap-2.5">
+                          <item.icon
+                            className="w-4 h-4 shrink-0 transition-colors"
+                            style={{ color: isActive ? '#F5C869' : '#8E9297' }}
+                          />
+                          <span>{item.name}</span>
+                        </div>
+                      </NavLink>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* SECTION 2: CLIENT PORTAL */}
-            <div className="pt-2 border-t border-[#2B2C33]">
-              <div className="flex items-center justify-between px-3 py-1 mb-1.5">
-                <span className="text-[10px] font-black tracking-wider uppercase flex items-center gap-1.5 text-[#CFDDC8]">
-                  <ShieldCheck className="w-3 h-3" /> Client Portal
-                </span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#CFDDC8]/20 text-[#CFDDC8] font-bold">
-                  ACTIVE
-                </span>
-              </div>
+            {showClientSection && (
+              <div className={showBusinessSection && navigationMode === 'DUAL_ROLE' ? 'pt-2 border-t border-[#2B2C33]' : ''}>
+                {navigationMode === 'DUAL_ROLE' && (
+                  <div className="flex items-center justify-between px-3 py-1 mb-1.5">
+                    <span className="text-[10px] font-black tracking-wider uppercase flex items-center gap-1.5 text-[#CFDDC8]">
+                      <ShieldCheck className="w-3 h-3" /> Client Portal
+                    </span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#CFDDC8]/20 text-[#CFDDC8] font-bold">
+                      ACTIVE
+                    </span>
+                  </div>
+                )}
 
-              <div className="space-y-0.5">
-                {clientNavItems.map((item) => {
-                  const isActive = item.exact
-                    ? location.pathname === item.path
-                    : location.pathname.startsWith(item.path);
+                <div className="space-y-0.5">
+                  {clientNavItems.map((item) => {
+                    const isActive = item.exact
+                      ? location.pathname === item.path
+                      : location.pathname.startsWith(item.path);
 
-                  return (
-                    <NavLink
-                      key={`client_${item.name}`}
-                      to={item.path}
-                      className="relative flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150"
-                      style={{
-                        color: isActive ? '#CFDDC8' : '#8E9297',
-                        backgroundColor: isActive ? 'rgba(207, 221, 200, 0.12)' : 'transparent',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isActive) e.currentTarget.style.color = '#FFFFFF';
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive) e.currentTarget.style.color = '#8E9297';
-                      }}
-                    >
-                      {isActive && (
-                        <span
-                          className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full"
-                          style={{ backgroundColor: '#CFDDC8' }}
-                        />
-                      )}
-                      <div className="flex items-center gap-2.5">
-                        <item.icon
-                          className="w-4 h-4 shrink-0 transition-colors"
-                          style={{ color: isActive ? '#CFDDC8' : '#8E9297' }}
-                        />
-                        <span>{item.name}</span>
-                      </div>
-                    </NavLink>
-                  );
-                })}
+                    return (
+                      <NavLink
+                        key={`client_${item.name}`}
+                        to={item.path}
+                        className="relative flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150"
+                        style={{
+                          color: isActive ? '#CFDDC8' : '#8E9297',
+                          backgroundColor: isActive ? 'rgba(207, 221, 200, 0.12)' : 'transparent',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isActive) e.currentTarget.style.color = '#FFFFFF';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isActive) e.currentTarget.style.color = '#8E9297';
+                        }}
+                      >
+                        {isActive && (
+                          <span
+                            className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full"
+                            style={{ backgroundColor: '#CFDDC8' }}
+                          />
+                        )}
+                        <div className="flex items-center gap-2.5">
+                          <item.icon
+                            className="w-4 h-4 shrink-0 transition-colors"
+                            style={{ color: isActive ? '#CFDDC8' : '#8E9297' }}
+                          />
+                          <span>{item.name}</span>
+                        </div>
+                      </NavLink>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
           </nav>
 
           {/* Bottom Controls */}

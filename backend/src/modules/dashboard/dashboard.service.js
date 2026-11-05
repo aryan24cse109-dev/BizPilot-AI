@@ -39,9 +39,20 @@ function sumValue(value) {
 
 function resolveRole(user, filters) {
   const requestedRole = (filters.role || filters.type || "").toLowerCase();
-  if (requestedRole === "client") return "CLIENT";
-  if (requestedRole === "business") return "BUSINESS";
-  if (user.accountCategory === "BUSINESS" || user.businessProfile) return "BUSINESS";
+  const isBiz = user.accountCategory === "BUSINESS" || Boolean(user.businessProfile);
+
+  if (requestedRole === "business") {
+    if (!isBiz) {
+      throw new ApiError(403, "A business workspace is required to view business analytics.");
+    }
+    return "BUSINESS";
+  }
+
+  if (requestedRole === "client") {
+    return "CLIENT";
+  }
+
+  if (isBiz) return "BUSINESS";
   return "CLIENT";
 }
 
@@ -55,6 +66,7 @@ function roleWhere(user, filters) {
     };
   }
   return {
+    businessUserId: { not: user.id },
     OR: [
       { clientUserId: user.id },
       { clientEmail: user.email.toLowerCase().trim() },
@@ -70,6 +82,7 @@ export async function getDashboard(user, filters = {}) {
   const ownerWhere = effectiveRole === "BUSINESS"
     ? { businessUserId: user.id }
     : {
+      businessUserId: { not: user.id },
       OR: [
         { clientUserId: user.id },
         { clientEmail: user.email.toLowerCase().trim() },

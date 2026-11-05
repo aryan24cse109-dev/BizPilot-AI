@@ -12,6 +12,64 @@ function hashToken(token) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
+export async function computeUserRoleCapabilities(user) {
+  if (!user) return null;
+
+  const normalizedEmail = (user.email || "").toLowerCase().trim();
+
+  // 1. Business Workspace ownership
+  const isBusinessOwner =
+    user.accountCategory === "BUSINESS" || Boolean(user.businessProfile);
+
+  // 2. Client relationship: registered as CLIENT or recipient of invoices/connections from other businesses
+  let clientInvoicesCount = 0;
+  let clientConnectionsCount = 0;
+
+  if (user.id) {
+    clientInvoicesCount = await prisma.invoice.count({
+      where: {
+        businessUserId: { not: user.id },
+        OR: [
+          { clientUserId: user.id },
+          { clientEmail: normalizedEmail },
+        ],
+      },
+    }).catch(() => 0);
+
+    clientConnectionsCount = await prisma.connection.count({
+      where: {
+        clientUserId: user.id,
+        businessUserId: { not: user.id },
+        status: "ACTIVE",
+      },
+    }).catch(() => 0);
+  }
+
+  const isClient =
+    user.accountCategory === "CLIENT" ||
+    clientInvoicesCount > 0 ||
+    clientConnectionsCount > 0;
+
+  let navigationMode = "BUSINESS_ONLY";
+  if (isBusinessOwner && isClient) {
+    navigationMode = "DUAL_ROLE";
+  } else if (isBusinessOwner) {
+    navigationMode = "BUSINESS_ONLY";
+  } else if (isClient) {
+    navigationMode = "CLIENT_ONLY";
+  }
+
+  return {
+    isBusinessOwner,
+    isClient,
+    navigationMode, // "BUSINESS_ONLY" | "CLIENT_ONLY" | "DUAL_ROLE"
+    hasBusinessAccess: isBusinessOwner,
+    hasClientAccess: isClient,
+    clientInvoicesCount,
+    clientConnectionsCount,
+  };
+}
+
 export async function linkInvoicesAndConnectionsToUser(user) {
   if (!user || !user.email) return;
   const normalizedEmail = user.email.toLowerCase().trim();
@@ -44,6 +102,7 @@ export async function linkInvoicesAndConnectionsToUser(user) {
     // 3. Ensure active connections between this user and all businesses that issued invoices to them
     const receivedInvoices = await prisma.invoice.findMany({
       where: {
+        businessUserId: { not: user.id },
         OR: [
           { clientUserId: user.id },
           { clientEmail: normalizedEmail },
@@ -73,17 +132,19 @@ export async function linkInvoicesAndConnectionsToUser(user) {
       }
     }
 
-    // 4. Ensure client profile exists so client portal works smoothly
-    const existingClientProfile = await prisma.clientProfile.findUnique({
-      where: { userId: user.id },
-    });
-    if (!existingClientProfile) {
-      await prisma.clientProfile.create({
-        data: {
-          userId: user.id,
-          country: "India",
-        },
-      }).catch(() => { });
+    // 4. Ensure client profile exists ONLY if the user has received invoices or registered as a client
+    if (receivedInvoices.length > 0 || user.accountCategory === "CLIENT") {
+      const existingClientProfile = await prisma.clientProfile.findUnique({
+        where: { userId: user.id },
+      });
+      if (!existingClientProfile) {
+        await prisma.clientProfile.create({
+          data: {
+            userId: user.id,
+            country: "India",
+          },
+        }).catch(() => { });
+      }
     }
   } catch (err) {
     console.warn("Auto-linking warning:", err.message);
@@ -180,6 +241,8 @@ export async function googleLogin(credential, accountCategory, requestInfo) {
     },
   });
 
+  const roleCapabilities = await computeUserRoleCapabilities(user);
+
   return {
     token,
     user: {
@@ -189,6 +252,10 @@ export async function googleLogin(credential, accountCategory, requestInfo) {
       fullName: user.fullName,
       accountCategory: user.accountCategory,
       onboardingCompleted: user.onboardingCompleted,
+      roleCapabilities,
+      navigationMode: roleCapabilities.navigationMode,
+      hasBusinessAccess: roleCapabilities.hasBusinessAccess,
+      hasClientAccess: roleCapabilities.hasClientAccess,
     },
   };
 }
@@ -224,7 +291,15 @@ export async function getAuthenticatedUser(userId) {
   });
 
   if (user) {
-    linkInvoicesAndConnectionsToUser(user).catch(() => { });
+    await linkInvoicesAndConnectionsToUser(user).catch(() => { });
+    const roleCapabilities = await computeUserRoleCapabilities(user);
+    return {
+      ...user,
+      roleCapabilities,
+      navigationMode: roleCapabilities.navigationMode,
+      hasBusinessAccess: roleCapabilities.hasBusinessAccess,
+      hasClientAccess: roleCapabilities.hasClientAccess,
+    };
   }
 
   return user;
@@ -319,6 +394,8 @@ export async function devLogin(email, accountCategory = "BUSINESS", fullName, re
     },
   });
 
+  const roleCapabilities = await computeUserRoleCapabilities(user);
+
   return {
     token,
     user: {
@@ -328,6 +405,12 @@ export async function devLogin(email, accountCategory = "BUSINESS", fullName, re
       fullName: user.fullName,
       accountCategory: user.accountCategory,
       onboardingCompleted: user.onboardingCompleted,
+      businessProfile: user.businessProfile,
+      clientProfile: user.clientProfile,
+      roleCapabilities,
+      navigationMode: roleCapabilities.navigationMode,
+      hasBusinessAccess: roleCapabilities.hasBusinessAccess,
+      hasClientAccess: roleCapabilities.hasClientAccess,
     },
   };
 }

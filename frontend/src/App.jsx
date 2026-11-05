@@ -64,9 +64,44 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Smart Root Redirect based on user's activeRole preference
+// Role-based route guard: enforces access based on user's actual business ownership and client relationships
+const RoleRoute = ({ requiredRole, children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F7F5F0] flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Verifying permissions..." />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const isBusinessOwner = user?.roleCapabilities?.isBusinessOwner ?? (
+    user?.accountCategory === 'BUSINESS' || Boolean(user?.businessProfile)
+  );
+
+  const isClient = user?.roleCapabilities?.isClient ?? (
+    user?.accountCategory === 'CLIENT' || Boolean(user?.roleCapabilities?.clientInvoicesCount > 0)
+  );
+
+  if (requiredRole === 'business' && !isBusinessOwner) {
+    return <Navigate to="/portal" replace />;
+  }
+
+  if (requiredRole === 'client' && !isClient) {
+    return <Navigate to="/business" replace />;
+  }
+
+  return children;
+};
+
+// Smart Root Redirect based on user's actual capabilities
 const RootRedirect = () => {
-  const { user, loading, activeRole } = useAuth();
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -80,8 +115,11 @@ const RootRedirect = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // In dual-role architecture, business workspace is primary for business users, portal for clients
-  const destination = user.accountCategory === 'CLIENT' && !user.businessProfile ? '/portal' : '/business';
+  const isBusinessOwner = user?.roleCapabilities?.isBusinessOwner ?? (
+    user?.accountCategory === 'BUSINESS' || Boolean(user?.businessProfile)
+  );
+
+  const destination = isBusinessOwner ? '/business' : '/portal';
   return <Navigate to={destination} replace />;
 };
 
@@ -109,12 +147,14 @@ export function App() {
                     />
                   </Route>
 
-                  {/* Business Workspace Experience (Unified Dual-Role Layout) */}
+                  {/* Business Workspace Experience (Conditional Navigation) */}
                   <Route
                     path="/business"
                     element={
                       <ProtectedRoute>
-                        <UnifiedLayout />
+                        <RoleRoute requiredRole="business">
+                          <UnifiedLayout />
+                        </RoleRoute>
                       </ProtectedRoute>
                     }
                   >
@@ -129,12 +169,14 @@ export function App() {
                     <Route path="settings" element={<SettingsPage />} />
                   </Route>
 
-                  {/* Client Portal Experience (Unified Dual-Role Layout) */}
+                  {/* Client Portal Experience (Conditional Navigation) */}
                   <Route
                     path="/portal"
                     element={
                       <ProtectedRoute>
-                        <UnifiedLayout />
+                        <RoleRoute requiredRole="client">
+                          <UnifiedLayout />
+                        </RoleRoute>
                       </ProtectedRoute>
                     }
                   >
