@@ -10,6 +10,8 @@ import {
   notFoundMiddleware
 } from './middleware/error.middleware.js';
 
+import assistantRoutes from './modules/assistant/assistant.routes.js';
+
 const app = express();
 
 app.disable('x-powered-by');
@@ -24,6 +26,7 @@ app.use(
   })
 );
 
+app.use('/api/assistant', assistantRoutes);
 app.use('/api/health', healthRoutes);
 
 // Other protected API routes will be mounted in later stages.
