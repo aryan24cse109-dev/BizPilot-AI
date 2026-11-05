@@ -7,8 +7,7 @@ import { ToastProvider } from './context/ToastContext.jsx';
 import { NotificationProvider } from './context/NotificationContext.jsx';
 
 // Layouts
-import { BusinessLayout } from './layouts/BusinessLayout.jsx';
-import { ClientLayout } from './layouts/ClientLayout.jsx';
+import { UnifiedLayout } from './layouts/UnifiedLayout.jsx';
 import { AuthLayout } from './layouts/AuthLayout.jsx';
 
 // Auth Pages
@@ -26,6 +25,7 @@ import { ClientsPage } from './pages/ClientsPage.jsx';
 import { PaymentsPage } from './pages/PaymentsPage.jsx';
 import { AnalyticsPage } from './pages/AnalyticsPage.jsx';
 import { SettingsPage } from './pages/SettingsPage.jsx';
+import { MessagesPage } from './pages/MessagesPage.jsx';
 
 // Client Portal Pages
 import { ClientHomePage } from './pages/client/ClientHomePage.jsx';
@@ -51,7 +51,7 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-canvas-light dark:bg-canvas-dark flex items-center justify-center">
+      <div className="min-h-screen bg-[#F7F5F0] flex items-center justify-center">
         <LoadingSpinner size="lg" text="Authenticating session..." />
       </div>
     );
@@ -70,7 +70,7 @@ const RootRedirect = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-canvas-light dark:bg-canvas-dark flex items-center justify-center">
+      <div className="min-h-screen bg-[#F7F5F0] flex items-center justify-center">
         <LoadingSpinner size="lg" text="Loading workspace..." />
       </div>
     );
@@ -80,7 +80,9 @@ const RootRedirect = () => {
     return <Navigate to="/login" replace />;
   }
 
-  return <Navigate to={activeRole === 'client' ? '/portal' : '/business'} replace />;
+  // In dual-role architecture, business workspace is primary for business users, portal for clients
+  const destination = user.accountCategory === 'CLIENT' && !user.businessProfile ? '/portal' : '/business';
+  return <Navigate to={destination} replace />;
 };
 
 export function App() {
@@ -107,12 +109,12 @@ export function App() {
                     />
                   </Route>
 
-                  {/* Business Workspace Experience */}
+                  {/* Business Workspace Experience (Unified Dual-Role Layout) */}
                   <Route
                     path="/business"
                     element={
                       <ProtectedRoute>
-                        <BusinessLayout />
+                        <UnifiedLayout />
                       </ProtectedRoute>
                     }
                   >
@@ -122,22 +124,24 @@ export function App() {
                     <Route path="invoices/:id" element={<InvoiceDetailsPage />} />
                     <Route path="clients" element={<ClientsPage />} />
                     <Route path="payments" element={<PaymentsPage />} />
+                    <Route path="messages" element={<MessagesPage />} />
                     <Route path="analytics" element={<AnalyticsPage />} />
                     <Route path="settings" element={<SettingsPage />} />
                   </Route>
 
-                  {/* Client Portal Experience (Separate Approchable Layout) */}
+                  {/* Client Portal Experience (Unified Dual-Role Layout) */}
                   <Route
                     path="/portal"
                     element={
                       <ProtectedRoute>
-                        <ClientLayout />
+                        <UnifiedLayout />
                       </ProtectedRoute>
                     }
                   >
                     <Route index element={<ClientHomePage />} />
                     <Route path="invoices" element={<ClientInvoicesPage />} />
                     <Route path="invoices/:id" element={<ClientInvoiceDetailsPage />} />
+                    <Route path="messages" element={<MessagesPage />} />
                     <Route path="history" element={<ClientPaymentHistoryPage />} />
                     <Route path="profile" element={<ClientProfilePage />} />
                   </Route>
@@ -154,6 +158,7 @@ export function App() {
                   <Route path="/ai" element={<Navigate to="/business/ai" replace />} />
                   <Route path="/clients" element={<Navigate to="/business/clients" replace />} />
                   <Route path="/payments" element={<Navigate to="/business/payments" replace />} />
+                  <Route path="/messages" element={<Navigate to="/business/messages" replace />} />
                   <Route path="/analytics" element={<Navigate to="/business/analytics" replace />} />
                   <Route path="/settings" element={<Navigate to="/business/settings" replace />} />
 

@@ -19,6 +19,7 @@ import paymentRoutes, {
 } from "./modules/payments/payment.routes.js";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes.js";
 import assistantRoutes from "./modules/assistant/assistant.routes.js";
+import messageRoutes from "./modules/messages/message.routes.js";
 
 import {
   notFoundHandler,
@@ -99,6 +100,7 @@ app.use(`${env.API_PREFIX}/invoices`, invoiceRoutes);
 app.use(`${env.API_PREFIX}/payments`, paymentRoutes);
 app.use(`${env.API_PREFIX}/dashboard`, dashboardRoutes);
 app.use(`${env.API_PREFIX}/assistant`, assistantRoutes);
+app.use(`${env.API_PREFIX}/messages`, messageRoutes);
 // Error handling
 app.use(notFoundHandler);
 app.use(errorHandler);

@@ -9,9 +9,9 @@ export const paymentsApi = {
     return api.post(`/payments/invoices/${arg1}/order`, arg2);
   },
   verifyPayment: (data) => api.post('/payments/verify', data),
-  getPayments: (params) => api.get('/payments', { params }),
-  getWorkspacePayments: (params) => api.get('/payments', { params }),
-  getClientPayments: (params) => api.get('/payments', { params }),
+  getPayments: (params = {}) => api.get('/payments', { params }),
+  getWorkspacePayments: (params = {}) => api.get('/payments', { params: { role: 'business', ...params } }),
+  getClientPayments: (params = {}) => api.get('/payments', { params: { role: 'client', ...params } }),
   getPayment: (id) => api.get(`/payments/${id}`),
   getInvoicePayments: (invoiceId) => api.get(`/payments/invoices/${invoiceId}`),
 };

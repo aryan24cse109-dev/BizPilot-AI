@@ -164,7 +164,7 @@ export async function listMyConnections(userId, accountCategory) {
       ? { businessUserId: userId }
       : { clientUserId: userId };
 
-    return prisma.connection.findMany({
+  return prisma.connection.findMany({
     where,
     orderBy: { createdAt: "desc" },
     include: {
@@ -173,6 +173,8 @@ export async function listMyConnections(userId, accountCategory) {
           id: true,
           username: true,
           fullName: true,
+          email: true,
+          businessProfile: true,
         },
       },
       clientUser: {
@@ -180,6 +182,8 @@ export async function listMyConnections(userId, accountCategory) {
           id: true,
           username: true,
           fullName: true,
+          email: true,
+          clientProfile: true,
         },
       },
     },

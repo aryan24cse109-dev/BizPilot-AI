@@ -173,3 +173,4 @@ export const AcceptInvitationPage = () => {
 };
 
 export default AcceptInvitationPage;
+

@@ -25,9 +25,8 @@ const paymentInclude = {
 };
 
 function assertClient(user) {
-  if (user.accountCategory !== "CLIENT") {
-    throw new ApiError(403, "Only client accounts can initiate payments.");
-  }
+  // In dual-role architecture, any authenticated user can make client payments
+  return true;
 }
 
 function assertMoneyMatch(providerAmount, expectedAmount, currency, expectedCurrency) {
@@ -62,21 +61,42 @@ export async function createPaymentOrder(user, invoiceId, input) {
         include: { businessUser: true },
       });
 
-      if (!invoice || invoice.clientUserId !== user.id) {
-        throw new ApiError(404, "Invoice not found.");
+      const isClientMatch =
+        invoice &&
+        (invoice.clientUserId === user.id ||
+          (invoice.clientEmail && invoice.clientEmail.toLowerCase() === user.email.toLowerCase().trim()));
+
+      if (!invoice || !isClientMatch) {
+        throw new ApiError(404, "Invoice not found or unauthorized.");
       }
       if (!["SENT", "VIEWED", "PARTIALLY_PAID", "OVERDUE"].includes(invoice.status)) {
         throw new ApiError(400, "This invoice is not available for payment.");
       }
 
-      const connection = await tx.connection.findFirst({
+      // Link clientUserId on the fly if needed
+      if (!invoice.clientUserId) {
+        await tx.invoice.update({
+          where: { id: invoice.id },
+          data: { clientUserId: user.id },
+        });
+      }
+
+      // Ensure active connection exists
+      await tx.connection.upsert({
         where: {
+          businessUserId_clientUserId: {
+            businessUserId: invoice.businessUserId,
+            clientUserId: user.id,
+          },
+        },
+        update: { status: "ACTIVE", acceptedAt: new Date() },
+        create: {
           businessUserId: invoice.businessUserId,
           clientUserId: user.id,
           status: "ACTIVE",
+          acceptedAt: new Date(),
         },
       });
-      if (!connection) throw new ApiError(403, "You are not connected to this business.");
 
       const existing = await tx.payment.findUnique({
         where: { idempotencyKey: input.idempotencyKey },
@@ -315,14 +335,23 @@ export async function processWebhook({ eventId, eventType, payload }) {
   }
 }
 
-export async function listPayments(user, filters) {
+export async function listPayments(user, filters = {}) {
   const { page, limit, skip } = getPagination(filters);
-  const where = user.accountCategory === "BUSINESS"
-    ? { businessUserId: user.id }
-    : user.accountCategory === "CLIENT"
-      ? { clientUserId: user.id }
-      : null;
-  if (!where) throw new ApiError(403, "This account cannot access payments.");
+  const requestedRole = (filters.role || filters.type || "").toLowerCase();
+
+  let where;
+  if (requestedRole === "client") {
+    where = { clientUserId: user.id };
+  } else if (requestedRole === "business") {
+    where = { businessUserId: user.id };
+  } else {
+    if (user.accountCategory === "BUSINESS" || user.businessProfile) {
+      where = { businessUserId: user.id };
+    } else {
+      where = { clientUserId: user.id };
+    }
+  }
+
   if (filters.status) where.status = filters.status;
   if (filters.invoiceId) where.invoiceId = filters.invoiceId;
   const [payments, total] = await prisma.$transaction([
@@ -341,18 +370,18 @@ export async function listPayments(user, filters) {
 export async function getPayment(user, paymentId) {
   const payment = await prisma.payment.findUnique({ where: { id: paymentId }, include: paymentInclude });
   if (!payment) throw new ApiError(404, "Payment not found.");
-  if (
-    (user.accountCategory === "BUSINESS" && payment.businessUserId !== user.id) ||
-    (user.accountCategory === "CLIENT" && payment.clientUserId !== user.id)
-  ) throw new ApiError(404, "Payment not found.");
+  if (payment.businessUserId !== user.id && payment.clientUserId !== user.id) {
+    throw new ApiError(404, "Payment not found.");
+  }
   return payment;
 }
 
-export async function listInvoicePayments(user, invoiceId, filters) {
+export async function listInvoicePayments(user, invoiceId, filters = {}) {
   const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId } });
   if (!invoice ||
-    (user.accountCategory === "BUSINESS" && invoice.businessUserId !== user.id) ||
-    (user.accountCategory === "CLIENT" && invoice.clientUserId !== user.id)) {
+    (invoice.businessUserId !== user.id &&
+     invoice.clientUserId !== user.id &&
+     invoice.clientEmail?.toLowerCase() !== user.email.toLowerCase())) {
     throw new ApiError(404, "Invoice not found.");
   }
   return listPayments(user, { ...filters, invoiceId });

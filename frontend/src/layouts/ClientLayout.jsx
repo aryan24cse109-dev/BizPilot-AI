@@ -61,44 +61,6 @@ export const ClientLayout = () => {
             </div>
           </div>
 
-          {/* Profile Card in Sidebar */}
-          <div
-            className="rounded-2xl p-4 mb-6 flex flex-col items-center text-center relative border"
-            style={{
-              backgroundColor: '#25262C',
-              borderColor: 'rgba(255, 255, 255, 0.08)',
-            }}
-          >
-            <div className="relative mb-2">
-              <img
-                src={
-                  user?.avatar ||
-                  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=160&q=80'
-                }
-                alt="Avatar"
-                className="w-14 h-14 rounded-full object-cover shadow-inner"
-                style={{ border: '2px solid rgba(255, 255, 255, 0.25)' }}
-              />
-              <span
-                className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-[#1C1D22]"
-                style={{ backgroundColor: '#10B981' }}
-                title="Online"
-              />
-            </div>
-            <span className="text-[11px] font-medium block" style={{ color: '#8E9297' }}>
-              Welcome Back,
-            </span>
-            <p className="text-sm font-bold text-white mt-0.5 tracking-tight truncate max-w-[180px]">
-              {user?.name || 'Valued Client'}
-            </p>
-            <span
-              className="text-[10px] font-semibold mt-1 px-2.5 py-0.5 rounded-full"
-              style={{ backgroundColor: 'rgba(207, 221, 200, 0.15)', color: '#CFDDC8' }}
-            >
-              Client Account
-            </span>
-          </div>
-
           {/* Navigation Items */}
           <nav className="space-y-1 overflow-y-auto flex-1 pr-1 custom-scroll">
             {clientNavItems.map((item) => {
@@ -198,16 +160,6 @@ export const ClientLayout = () => {
         >
           {/* Left Context Info */}
           <div className="flex items-center gap-2.5">
-            <span
-              className="px-2.5 py-1 rounded-xl text-xs font-bold border flex items-center gap-1.5"
-              style={{ backgroundColor: '#FAF8F5', borderColor: '#E8E4DC', color: '#1C1D22' }}
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Verified Client Portal</span>
-            </span>
-            <span className="text-xs font-medium hidden sm:inline" style={{ color: '#8E9297' }}>
-              Secure Payment & Collaboration Hub
-            </span>
           </div>
 
           {/* Right Header Actions */}

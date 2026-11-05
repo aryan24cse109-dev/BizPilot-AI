@@ -82,44 +82,6 @@ export const BusinessLayout = () => {
             </div>
           </div>
 
-          {/* Profile Card in Sidebar matching reference aesthetic */}
-          <div
-            className="rounded-2xl p-4 mb-6 flex flex-col items-center text-center relative border"
-            style={{
-              backgroundColor: '#25262C',
-              borderColor: 'rgba(255, 255, 255, 0.08)',
-            }}
-          >
-            <div className="relative mb-2">
-              <img
-                src={
-                  user?.avatar ||
-                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&q=80'
-                }
-                alt="Avatar"
-                className="w-14 h-14 rounded-full object-cover shadow-inner"
-                style={{ border: '2px solid rgba(255, 255, 255, 0.25)' }}
-              />
-              <span
-                className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-[#1C1D22]"
-                style={{ backgroundColor: '#10B981' }}
-                title="Online"
-              />
-            </div>
-            <span className="text-[11px] font-medium block" style={{ color: '#8E9297' }}>
-              Welcome Back,
-            </span>
-            <p className="text-sm font-bold text-white mt-0.5 tracking-tight truncate max-w-[180px]">
-              {user?.name || 'Rahul Sharma'}
-            </p>
-            <span
-              className="text-[10px] font-semibold mt-1 px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: 'rgba(245, 200, 105, 0.15)', color: '#F5C869' }}
-            >
-              {activeWorkspace?.name || 'Rahul Enterprises'}
-            </span>
-          </div>
-
           {/* Navigation Items */}
           <nav className="space-y-1 overflow-y-auto flex-1 pr-1 custom-scroll">
             {navItems.map((item) => {
@@ -236,22 +198,6 @@ export const BusinessLayout = () => {
                 style={{ borderColor: '#E8E4DC' }}
                 onMouseLeave={() => setShowWorkspaceMenu(false)}
               >
-                <p className="text-[10px] uppercase font-bold text-slate-400 px-3 py-1.5">
-                  Switch Workspace
-                </p>
-                {allWorkspaces.map((ws) => (
-                  <button
-                    key={ws.id}
-                    onClick={() => {
-                      switchWorkspace(ws);
-                      setShowWorkspaceMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-[#FAF8F5] flex items-center justify-between transition"
-                  >
-                    <span className="font-semibold text-slate-800 truncate">{ws.name}</span>
-                    {activeWorkspace?.id === ws.id && <Check className="w-3.5 h-3.5 text-emerald-600" />}
-                  </button>
-                ))}
               </div>
             )}
           </div>

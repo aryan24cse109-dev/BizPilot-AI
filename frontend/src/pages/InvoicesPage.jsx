@@ -45,6 +45,11 @@ export const InvoicesPage = () => {
   const [modalTab, setModalTab] = useState('edit'); // 'edit' or 'preview'
   const [clients, setClients] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState('');
+  const [clientMode, setClientMode] = useState(
+    searchParams.get('clientName') || searchParams.get('clientEmail') ? 'new' : 'select'
+  );
+  const [customClientName, setCustomClientName] = useState(searchParams.get('clientName') || '');
+  const [customClientEmail, setCustomClientEmail] = useState(searchParams.get('clientEmail') || '');
   const [currency, setCurrency] = useState('INR');
   const [dueDate, setDueDate] = useState(() => {
     const d = new Date();
@@ -78,36 +83,61 @@ export const InvoicesPage = () => {
 
   const fetchClients = async () => {
     try {
-      const res = await clientsApi.getConnections();
-      const conns = res?.data?.connections || res?.connections || [];
-      const clientList = conns
-        .filter((c) => c.status === 'ACTIVE')
-        .map((c) => c.clientUser)
-        .filter(Boolean);
+      const [connRes, invRes] = await Promise.all([
+        clientsApi.getConnections().catch(() => ({ data: { connections: [] } })),
+        invoicesApi.listWorkspaceInvoices({ limit: 100 }).catch(() => ({ data: { invoices: [] } })),
+      ]);
 
-      if (clientList.length > 0) {
-        setClients(clientList);
-        if (!selectedClientId) setSelectedClientId(clientList[0].id);
-      } else {
-        const fallbackClient = {
-          id: 'demo-client-1',
-          fullName: 'Rahul Sharma (Rahul Enterprises)',
-          email: 'rahul@rahulenterprises.com',
-          username: 'rahul_client',
-        };
-        setClients([fallbackClient]);
-        if (!selectedClientId) setSelectedClientId(fallbackClient.id);
+      const conns = connRes?.data?.connections || connRes?.connections || [];
+      const pastInvoices = invRes?.data?.invoices || invRes?.invoices || [];
+
+      const clientMap = new Map();
+
+      // From active connections
+      conns.forEach((c) => {
+        if (c.clientUser && c.clientUser.email) {
+          const email = c.clientUser.email.toLowerCase();
+          clientMap.set(email, {
+            id: c.clientUser.id,
+            name: c.clientUser.fullName || c.clientUser.username || 'Client User',
+            email,
+          });
+        }
+      });
+
+      // From previous invoices
+      pastInvoices.forEach((inv) => {
+        if (inv.clientEmail) {
+          const email = inv.clientEmail.toLowerCase();
+          if (!clientMap.has(email)) {
+            clientMap.set(email, {
+              id: inv.clientUserId || email,
+              name: inv.clientName || 'Invoiced Client',
+              email,
+            });
+          }
+        }
+      });
+
+      const clientList = Array.from(clientMap.values());
+      setClients(clientList);
+
+      const paramEmail = searchParams.get('clientEmail')?.toLowerCase();
+      if (paramEmail) {
+        const found = clientList.find((c) => c.email === paramEmail);
+        if (found) {
+          setSelectedClientId(found.id);
+          setClientMode('select');
+        } else {
+          setCustomClientEmail(paramEmail);
+          setCustomClientName(searchParams.get('clientName') || '');
+          setClientMode('new');
+        }
+      } else if (clientList.length > 0 && !selectedClientId) {
+        setSelectedClientId(clientList[0].id);
       }
     } catch (err) {
       console.error('Error fetching clients:', err);
-      const fallbackClient = {
-        id: 'demo-client-1',
-        fullName: 'Rahul Sharma (Rahul Enterprises)',
-        email: 'rahul@rahulenterprises.com',
-        username: 'rahul_client',
-      };
-      setClients([fallbackClient]);
-      if (!selectedClientId) setSelectedClientId(fallbackClient.id);
     }
   };
 
@@ -155,10 +185,21 @@ export const InvoicesPage = () => {
   const handleCreateInvoice = async (isDraft = false) => {
     setSubmitting(true);
     try {
-      const clientObj = clients.find(c => c.id === selectedClientId) || clients[0];
+      const isNew = clientMode === 'new';
+      const selectedClient = clients.find((c) => c.id === selectedClientId || c.email === selectedClientId);
+
+      const clientName = isNew ? customClientName.trim() : (selectedClient?.name || 'Valued Client');
+      const clientEmail = isNew ? customClientEmail.trim() : (selectedClient?.email || '');
+
+      if (!clientName || !clientEmail) {
+        toast.error('Client Required', 'Please provide a client name and email address.');
+        setSubmitting(false);
+        return;
+      }
+
       const invoicePayload = {
-        clientName: clientObj?.fullName || clientObj?.username || 'Client',
-        clientEmail: clientObj?.email || 'rahul@rahulenterprises.com',
+        clientName,
+        clientEmail: clientEmail.toLowerCase().trim(),
         currency,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
         discountAmount: String(discountAmount || 0),
@@ -184,7 +225,7 @@ export const InvoicesPage = () => {
 
       toast.success(
         isDraft ? 'Draft Saved' : 'Invoice Dispatched',
-        `Invoice ${created?.invoiceNumber || 'draft'} for ₹${Number(grandTotal).toLocaleString('en-IN')} created successfully.`
+        `Invoice ${created?.invoiceNumber || 'draft'} for ₹${Number(grandTotal).toLocaleString('en-IN')} created successfully for ${clientName}.`
       );
       setShowCreateModal(false);
       fetchInvoices();
@@ -452,31 +493,90 @@ export const InvoicesPage = () => {
 
           {modalTab === 'edit' ? (
             <div className="space-y-4">
-              {/* Recipient Client & Due Date */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Recipient Client <span className="text-emerald-400">*</span>
+              {/* Client Selection / Direct Input */}
+              <div className="p-4 rounded-2xl bg-charcoal-950 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-emerald-400" />
+                    Billed Client Details <span className="text-emerald-400">*</span>
                   </label>
-                  {clients.length > 0 ? (
+
+                  <div className="flex items-center gap-1.5 p-1 bg-charcoal-900 rounded-lg border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setClientMode('select')}
+                      className={`text-[11px] px-2.5 py-1 rounded-md font-semibold transition ${
+                        clientMode === 'select'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Client List ({clients.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setClientMode('new')}
+                      className={`text-[11px] px-2.5 py-1 rounded-md font-semibold transition ${
+                        clientMode === 'new'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      + Enter New Client
+                    </button>
+                  </div>
+                </div>
+
+                {clientMode === 'select' && clients.length > 0 ? (
+                  <div>
+                    <label className="block text-[11px] text-slate-400 mb-1">
+                      Choose from your client directory:
+                    </label>
                     <select
                       value={selectedClientId}
                       onChange={(e) => setSelectedClientId(e.target.value)}
-                      className="w-full bg-charcoal-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-charcoal-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
                     >
                       {clients.map((c) => (
-                        <option key={c.id} value={c.id}>
+                        <option key={c.id || c.email} value={c.id || c.email}>
                           {c.name} ({c.email})
                         </option>
                       ))}
                     </select>
-                  ) : (
-                    <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
-                      No accepted client connections found. Please connect with a client on the Clients page first.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-1">Client Full Name *</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Rahul Sharma"
+                        value={customClientName}
+                        onChange={(e) => setCustomClientName(e.target.value)}
+                        className="w-full bg-charcoal-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                        required
+                      />
                     </div>
-                  )}
-                </div>
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-1">Client Email Address *</label>
+                      <input
+                        type="email"
+                        placeholder="e.g. rahul@clientcorp.com"
+                        value={customClientEmail}
+                        onChange={(e) => setCustomClientEmail(e.target.value)}
+                        className="w-full bg-charcoal-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                        required
+                      />
+                    </div>
+                    <div className="sm:col-span-2 text-[10px] text-slate-400">
+                      ℹ️ The client will automatically receive an onboarding invitation. When they sign in with this email, the invoice will automatically link to their account.
+                    </div>
+                  </div>
+                )}
+              </div>
 
+              {/* Due Date & Currency */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                     Due Date <span className="text-emerald-400">*</span>
@@ -486,6 +586,17 @@ export const InvoicesPage = () => {
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                     className="w-full bg-charcoal-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Currency
+                  </label>
+                  <input
+                    type="text"
+                    value={currency}
+                    disabled
+                    className="w-full bg-charcoal-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-400 cursor-not-allowed"
                   />
                 </div>
               </div>

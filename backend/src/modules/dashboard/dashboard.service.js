@@ -37,31 +37,45 @@ function sumValue(value) {
   return new Decimal(value ?? 0).toFixed(2);
 }
 
+function resolveRole(user, filters) {
+  const requestedRole = (filters.role || filters.type || "").toLowerCase();
+  if (requestedRole === "client") return "CLIENT";
+  if (requestedRole === "business") return "BUSINESS";
+  if (user.accountCategory === "BUSINESS" || user.businessProfile) return "BUSINESS";
+  return "CLIENT";
+}
+
 function roleWhere(user, filters) {
-  if (user.accountCategory === "BUSINESS") {
+  const effectiveRole = resolveRole(user, filters);
+  if (effectiveRole === "BUSINESS") {
     return {
       businessUserId: user.id,
       status: { in: filters.includeCancelled ? [...publishedStatuses, "CANCELLED"] : publishedStatuses },
       ...dateWhere(filters, "issueDate"),
     };
   }
-  if (user.accountCategory === "CLIENT") {
-    return {
-      clientUserId: user.id,
-      status: { in: openStatuses },
-      ...dateWhere(filters, "issueDate"),
-    };
-  }
-  throw new ApiError(403, "This account cannot access the dashboard.");
+  return {
+    OR: [
+      { clientUserId: user.id },
+      { clientEmail: user.email.toLowerCase().trim() },
+    ],
+    status: { in: openStatuses },
+    ...dateWhere(filters, "issueDate"),
+  };
 }
 
-export async function getDashboard(user, filters) {
-  const ownerWhere = user.accountCategory === "BUSINESS"
+export async function getDashboard(user, filters = {}) {
+  const effectiveRole = resolveRole(user, filters);
+
+  const ownerWhere = effectiveRole === "BUSINESS"
     ? { businessUserId: user.id }
-    : user.accountCategory === "CLIENT"
-      ? { clientUserId: user.id }
-      : null;
-  if (!ownerWhere) throw new ApiError(403, "This account cannot access the dashboard.");
+    : {
+        OR: [
+          { clientUserId: user.id },
+          { clientEmail: user.email.toLowerCase().trim() },
+        ],
+      };
+
   const invoiceWhere = {
     ...ownerWhere,
     ...dateWhere(filters, "issueDate"),
@@ -71,7 +85,7 @@ export async function getDashboard(user, filters) {
     status: { in: filters.includeCancelled ? [...publishedStatuses, "CANCELLED"] : publishedStatuses },
   };
   const paymentWhere = {
-    ...(user.accountCategory === "BUSINESS"
+    ...(effectiveRole === "BUSINESS"
       ? { businessUserId: user.id }
       : { clientUserId: user.id }),
     ...dateWhere(filters, "capturedAt"),
@@ -98,28 +112,33 @@ export async function getDashboard(user, filters) {
 
   const invoiceCounts = Object.fromEntries(counts.map((row) => [row.status, row._count._all]));
   return {
-    role: user.accountCategory,
-    semantics: {
-      invoiceMetricsDate: "Invoice issue date (UTC)",
-      collectionMetricsDate: "Payment capture date (UTC)",
-      pendingMetricsDate: "Payment capture date when available, otherwise initiation date",
-    },
+    role: effectiveRole,
+    period: filters.period ?? "all_time",
     metrics: {
       invoices: {
-        total: Object.values(invoiceCounts).reduce((sum, value) => sum + value, 0),
-        byStatus: invoiceCounts,
+        draft: invoiceCounts.DRAFT ?? 0,
+        sent: invoiceCounts.SENT ?? 0,
+        viewed: invoiceCounts.VIEWED ?? 0,
+        partiallyPaid: invoiceCounts.PARTIALLY_PAID ?? 0,
+        paid: invoiceCounts.PAID ?? 0,
+        overdue: invoiceCounts.OVERDUE ?? 0,
+        cancelled: invoiceCounts.CANCELLED ?? 0,
+        refunded: invoiceCounts.REFUNDED ?? 0,
+        total: Object.values(invoiceCounts).reduce((acc, count) => acc + count, 0),
       },
       financial: {
+        currency: "INR",
         totalInvoicedAmount: sumValue(invoiceAmounts._sum.totalAmount),
         totalOutstandingAmount: sumValue(invoiceAmounts._sum.balanceDue),
         totalCapturedAmount: sumValue(captured._sum.amount),
-        pendingPaymentAmount: sumValue(pending._sum.amount),
-        failedPaymentCount: failedCount,
-        successfulPaymentCount: successfulCount,
+        totalPendingAmount: sumValue(pending._sum.amount),
+      },
+      payments: {
+        successfulCount,
+        failedCount,
+        totalAttempts: successfulCount + failedCount,
       },
     },
-    recentInvoices: await listDashboardInvoices(user, filters, 1, 5),
-    recentPayments: await listDashboardTransactions(user, filters, 1, 5),
   };
 }
 
@@ -145,8 +164,9 @@ export async function listDashboardInvoices(user, filters, pageInput, limitInput
 
 export async function listDashboardTransactions(user, filters, pageInput, limitInput) {
   const { page, limit, skip } = getPagination({ page: pageInput ?? filters.page, limit: limitInput ?? filters.limit });
+  const effectiveRole = resolveRole(user, filters);
   const where = {
-    ...(user.accountCategory === "BUSINESS" ? { businessUserId: user.id } : { clientUserId: user.id }),
+    ...(effectiveRole === "BUSINESS" ? { businessUserId: user.id } : { clientUserId: user.id }),
     ...(filters.status ? { status: filters.status } : {}),
     ...dateWhere(filters, "createdAt"),
   };

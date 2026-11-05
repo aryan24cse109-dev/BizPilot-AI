@@ -1,4 +1,3 @@
-
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 
@@ -11,6 +10,84 @@ const SESSION_SECONDS = env.SESSION_DURATION_DAYS * 24 * 60 * 60;
 
 function hashToken(token) {
   return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+export async function linkInvoicesAndConnectionsToUser(user) {
+  if (!user || !user.email) return;
+  const normalizedEmail = user.email.toLowerCase().trim();
+
+  try {
+    // 1. Automatically link all unlinked invoices with this email to user.id
+    await prisma.invoice.updateMany({
+      where: {
+        clientEmail: normalizedEmail,
+        clientUserId: null,
+      },
+      data: {
+        clientUserId: user.id,
+      },
+    });
+
+    // 2. Mark any pending invitations for this email as accepted
+    await prisma.invitation.updateMany({
+      where: {
+        email: normalizedEmail,
+        status: "PENDING",
+      },
+      data: {
+        status: "ACCEPTED",
+        acceptedAt: new Date(),
+        acceptedByUserId: user.id,
+      },
+    });
+
+    // 3. Ensure active connections between this user and all businesses that issued invoices to them
+    const receivedInvoices = await prisma.invoice.findMany({
+      where: {
+        OR: [
+          { clientUserId: user.id },
+          { clientEmail: normalizedEmail },
+        ],
+      },
+      select: { businessUserId: true },
+      distinct: ["businessUserId"],
+    });
+
+    for (const inv of receivedInvoices) {
+      if (inv.businessUserId !== user.id) {
+        await prisma.connection.upsert({
+          where: {
+            businessUserId_clientUserId: {
+              businessUserId: inv.businessUserId,
+              clientUserId: user.id,
+            },
+          },
+          update: { status: "ACTIVE", acceptedAt: new Date() },
+          create: {
+            businessUserId: inv.businessUserId,
+            clientUserId: user.id,
+            status: "ACTIVE",
+            acceptedAt: new Date(),
+          },
+        }).catch(() => {});
+      }
+    }
+
+    // 4. Ensure client profile exists so client portal works smoothly
+    const existingClientProfile = await prisma.clientProfile.findUnique({
+      where: { userId: user.id },
+    });
+    if (!existingClientProfile) {
+      await prisma.clientProfile.create({
+        data: {
+          userId: user.id,
+          country: "India",
+        },
+      }).catch(() => {});
+    }
+  } catch (err) {
+    console.warn("Auto-linking warning:", err.message);
+  }
 }
 
 export async function googleLogin(credential, accountCategory, requestInfo) {
@@ -73,6 +150,9 @@ export async function googleLogin(credential, accountCategory, requestInfo) {
     throw new ApiError(403, "This account is not active.");
   }
 
+  // Dual-role email linking
+  await linkInvoicesAndConnectionsToUser(user);
+
   const sessionId = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + SESSION_SECONDS * 1000);
 
@@ -127,7 +207,7 @@ export async function logoutSession(userId, sessionId) {
 }
 
 export async function getAuthenticatedUser(userId) {
-  return prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       id: true,
@@ -142,6 +222,12 @@ export async function getAuthenticatedUser(userId) {
       createdAt: true,
     },
   });
+
+  if (user) {
+    linkInvoicesAndConnectionsToUser(user).catch(() => {});
+  }
+
+  return user;
 }
 
 export async function devLogin(email, accountCategory = "BUSINESS", fullName, requestInfo = {}) {
@@ -202,6 +288,9 @@ export async function devLogin(email, accountCategory = "BUSINESS", fullName, re
   if (user.status !== "ACTIVE") {
     throw new ApiError(403, "This account is not active.");
   }
+
+  // Dual-role email linking
+  await linkInvoicesAndConnectionsToUser(user);
 
   const sessionId = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + SESSION_SECONDS * 1000);
