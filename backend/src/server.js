@@ -1,22 +1,61 @@
-import app from './app.js';
-import { ENV } from './config/env.js';
-import prisma from './config/db.js';
-import { logger } from './utils/logger.js';
+import app from "./app.js";
+import { env } from "./config/env.js";
 
-const startServer = async () => {
+import {
+  connectDatabase,
+  disconnectDatabase,
+} from "./config/database.js";
+
+let server;
+let isShuttingDown = false;
+
+async function startServer() {
   try {
-    // Verify database connectivity
-    await prisma.$connect();
-    logger.info('Connected to PostgreSQL database (Neon) successfully.');
+    // Connect to PostgreSQL first
+    await connectDatabase();
 
-    app.listen(ENV.PORT, () => {
-      logger.info(`BizPilot AI Backend running on port ${ENV.PORT} [${ENV.NODE_ENV}]`);
-      logger.info(`API Base URL: http://localhost:${ENV.PORT}/api/v1`);
+    // Start Express
+    server = app.listen(env.PORT, () => {
+      console.log("----------------------------------");
+      console.log("BizPilot AI Backend Started");
+      console.log(`Environment: ${env.NODE_ENV}`);
+      console.log(`Port: ${env.PORT}`);
+      console.log(`API: http://localhost:${env.PORT}${env.API_PREFIX}`);
+      console.log("----------------------------------");
     });
   } catch (error) {
-    logger.error('Failed to start server:', error);
-    process.exit(1);
+    console.error("Failed to start BizPilot AI backend:", error);
+    await disconnectDatabase().catch(() => {});
+    process.exitCode = 1;
   }
-};
+}
+
+async function shutdown(signal) {
+  if (isShuttingDown) return;
+
+  isShuttingDown = true;
+  console.log(`\n${signal} received. Shutting down...`);
+
+  if (server) {
+    server.close(async (error) => {
+      if (error) {
+        console.error("Error while closing server:", error);
+        process.exitCode = 1;
+      }
+
+      try {
+        await disconnectDatabase();
+      } catch (disconnectError) {
+        console.error("Database shutdown error:", disconnectError);
+        process.exitCode = 1;
+      }
+    });
+  } else {
+    await disconnectDatabase().catch(console.error);
+  }
+}
+
+process.once("SIGINT", () => shutdown("SIGINT"));
+process.once("SIGTERM", () => shutdown("SIGTERM"));
 
 startServer();

@@ -1,26 +1,70 @@
-import dotenv from 'dotenv';
-dotenv.config();
 
-export const ENV = {
-  PORT: process.env.PORT || 5000,
-  NODE_ENV: process.env.NODE_ENV || 'development',
-  CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
-  DATABASE_URL: process.env.DATABASE_URL,
-  JWT_SECRET: process.env.JWT_SECRET || 'bizpilot_super_secure_jwt_secret_production_2026_xyz',
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
-  
-  // AI
-  AI_PROVIDER: process.env.AI_PROVIDER || 'auto',
-  GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
-  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
-  SARVAM_API_KEY: process.env.SARVAM_API_KEY || '',
+import "dotenv/config";
+import { z } from "zod";
 
-  // Payments
-  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || 'rzp_test_bizpilot_demo_key',
-  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || 'rzp_test_bizpilot_demo_secret',
-  RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET || 'rzp_webhook_secret_bizpilot',
+const envSchema = z.object({
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
 
-  PAYPAL_CLIENT_ID: process.env.PAYPAL_CLIENT_ID || 'paypal_test_bizpilot_demo_client_id',
-  PAYPAL_CLIENT_SECRET: process.env.PAYPAL_CLIENT_SECRET || 'paypal_test_bizpilot_demo_secret',
-  PAYPAL_WEBHOOK_ID: process.env.PAYPAL_WEBHOOK_ID || 'paypal_test_webhook_id',
-};
+  PORT: z.coerce.number().int().min(1).max(65535).default(5000),
+
+  API_PREFIX: z.string().startsWith("/").default("/api"),
+
+  DATABASE_URL: z
+    .string()
+    .min(1)
+    .refine(
+      (value) =>
+        value.startsWith("postgresql://") ||
+        value.startsWith("postgres://"),
+      "Invalid PostgreSQL connection URL"
+    ),
+
+  FRONTEND_URL: z.string().url().default("http://localhost:5173"),
+
+  AI_SERVICE_URL: z.string().url().default("http://localhost:6000"),
+
+  INTERNAL_SERVICE_SECRET: z
+    .string()
+    .min(32, "INTERNAL_SERVICE_SECRET must contain at least 32 characters")
+    .optional(),
+
+  GOOGLE_CLIENT_ID: z.string().default(""),
+
+  JWT_SECRET: z.string().min(32, "JWT_SECRET must contain at least 32 characters"),
+
+  SESSION_COOKIE_NAME: z.string().default("bizpilot_session"),
+
+  SESSION_DURATION_DAYS: z.coerce.number().int().min(1).max(30).default(7),
+
+  EMAIL_PROVIDER: z.enum(["console", "resend"]).default("console"),
+
+  EMAIL_API_KEY: z.string().default(""),
+
+  EMAIL_FROM: z.string().default(""),
+
+  RAZORPAY_KEY_ID: z.string().default(""),
+  RAZORPAY_KEY_SECRET: z.string().default(""),
+  RAZORPAY_WEBHOOK_SECRET: z.string().default(""),
+});
+
+const result = envSchema.safeParse(process.env);
+
+if (!result.success) {
+  console.error("Invalid environment configuration:");
+
+  for (const issue of result.error.issues) {
+    console.error(`- ${issue.path.join(".")}: ${issue.message}`);
+  }
+
+  process.exit(1);
+}
+
+if (result.data.NODE_ENV === "production" && !result.data.INTERNAL_SERVICE_SECRET) {
+  console.error("Invalid environment configuration:");
+  console.error("- INTERNAL_SERVICE_SECRET: required in production");
+  process.exit(1);
+}
+
+export const env = Object.freeze(result.data);

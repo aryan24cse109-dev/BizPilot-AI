@@ -1,82 +1,60 @@
-import jwt from 'jsonwebtoken';
-import { ENV } from '../config/env.js';
-import prisma from '../config/db.js';
 
-export const authenticate = async (req, res, next) => {
+import jwt from "jsonwebtoken";
+
+import { prisma } from "../config/database.js";
+import { env } from "../config/env.js";
+import { ApiError } from "../utils/ApiError.js";
+import { createTokenHash } from "../modules/auth/auth.service.js";
+
+export async function authenticate(req, res, next) {
   try {
-    let token = null;
-
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-      token = req.headers.authorization.split(' ')[1];
-    } else if (req.cookies && req.cookies.token) {
-      token = req.cookies.token;
-    }
+    const token = req.cookies?.[env.SESSION_COOKIE_NAME];
 
     if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required. No token provided.',
-      });
+      throw new ApiError(401, "Authentication required.");
     }
 
     let decoded;
+
     try {
-      decoded = jwt.verify(token, ENV.JWT_SECRET);
-    } catch (err) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid or expired session token. Please log in again.',
+      decoded = jwt.verify(token, env.JWT_SECRET, {
+        issuer: "bizpilot-ai",
+        audience: "bizpilot-ai-users",
       });
+    } catch {
+      throw new ApiError(401, "Invalid or expired session.");
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+    if (!decoded.sub || !decoded.sid) {
+      throw new ApiError(401, "Invalid session.");
+    }
+
+    const session = await prisma.authSession.findUnique({
+      where: { id: decoded.sid },
       include: {
-        profile: true,
-        workspacesOwned: {
-          select: { id: true, name: true, slug: true, currency: true }
-        },
-        workspaceMembers: {
-          include: {
-            workspace: {
-              select: { id: true, name: true, slug: true, currency: true }
-            }
-          }
-        }
-      }
+        user: true,
+      },
     });
 
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'User account no longer exists.',
-      });
+    if (
+      !session ||
+      session.userId !== decoded.sub ||
+      session.revokedAt ||
+      session.expiresAt <= new Date() ||
+      session.tokenHash !== createTokenHash(token)
+    ) {
+      throw new ApiError(401, "Session expired or revoked.");
     }
 
-    if (user.accountStatus !== 'ACTIVE') {
-      return res.status(403).json({
-        success: false,
-        message: `Account is ${user.accountStatus.toLowerCase()}. Please contact support.`,
-      });
+    if (session.user.status !== "ACTIVE") {
+      throw new ApiError(403, "Account is not active.");
     }
 
-    // Attach user to request
-    req.user = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      username: user.username,
-      profile: user.profile,
-      workspacesOwned: user.workspacesOwned,
-      workspaceMembers: user.workspaceMembers,
-    };
+    req.user = session.user;
+    req.sessionId = session.id;
 
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal authentication error.',
-    });
+    next(error);
   }
-};
+}

@@ -1,21 +1,41 @@
-import { logger } from '../utils/logger.js';
 
-export const errorHandler = (err, req, res, next) => {
-  logger.error(err.message, { stack: err.stack, path: req.path, method: req.method });
+import { env } from "../config/env.js";
 
-  const statusCode = err.statusCode || (res.statusCode !== 200 ? res.statusCode : 500);
-
-  res.status(statusCode).json({
+export function notFoundHandler(req, res) {
+  return res.status(404).json({
     success: false,
-    message: err.message || 'Internal server error occurred.',
-    errors: err.errors || undefined,
-    ...(process.env.NODE_ENV === 'development' ? { stack: err.stack } : {}),
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
   });
-};
+}
 
-export const notFoundHandler = (req, res) => {
-  res.status(404).json({
+export function errorHandler(error, req, res, next) {
+  if (res.headersSent) {
+    return next(error);
+  }
+
+  const statusCode = Number(error.statusCode || error.status) || 500;
+
+  const message =
+    statusCode >= 500 && env.NODE_ENV === "production"
+      ? "Internal server error"
+      : error.message || "Something went wrong";
+
+  if (statusCode >= 500) {
+    console.error(error);
+  }
+
+  const response = {
     success: false,
-    message: `API Route not found: ${req.method} ${req.originalUrl}`,
-  });
-};
+    message,
+  };
+
+  if (error.code) {
+    response.code = error.code;
+  }
+
+  if (error.details && statusCode < 500) {
+    response.details = error.details;
+  }
+
+  return res.status(statusCode).json(response);
+}

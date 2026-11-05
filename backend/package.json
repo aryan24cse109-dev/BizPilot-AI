@@ -1,33 +1,53 @@
 {
-  "name": "bizpilot-backend",
+  "name": "@bizpilot/backend",
   "version": "1.0.0",
-  "description": "BizPilot AI Backend API Service",
-  "main": "src/server.js",
-  "type": "module",
-  "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:push": "prisma db push",
-    "prisma:seed": "node src/scripts/seed.js",
-    "test": "vitest run"
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
   },
+  "scripts": {
+    "test": "node --test",
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "db:validate": "prisma validate",
+    "db:format": "prisma format",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:status": "prisma migrate status",
+    "db:studio": "prisma studio"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aryan24cse109-dev/BizPilot-AI.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/aryan24cse109-dev/BizPilot-AI/issues"
+  },
+  "homepage": "https://github.com/aryan24cse109-dev/BizPilot-AI#readme",
+  "private": "true",
   "dependencies": {
-    "@prisma/client": "^6.4.0",
-    "bcryptjs": "^3.0.2",
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
     "cookie-parser": "^1.4.7",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "jsonwebtoken": "^9.0.2",
-    "pdfkit": "^0.16.0",
-    "qrcode": "^1.5.4",
-    "zod": "^3.24.2"
+    "cors": "^2.8.6",
+    "decimal.js": "^10.6.0",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.3",
+    "google-auth-library": "^11.3.3",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "pdfkit": "^0.20.2",
+    "pg": "^8.23.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "prisma": "^6.4.0",
-    "supertest": "^7.0.0",
-    "vitest": "^3.0.7"
+    "nodemon": "^3.1.14",
+    "prisma": "^7.9.1"
   }
 }

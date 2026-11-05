@@ -1,43 +1,105 @@
-import express from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import apiRoutes from './routes/index.js';
-import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
-import { ENV } from './config/env.js';
+
+import express from "express";
+import helmet from "helmet";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+
+import { env } from "./config/env.js";
+import { prisma } from "./config/database.js";
+
+import authRoutes from "./modules/auth/auth.routes.js";
+import userRoutes from "./modules/users/user.routes.js";
+import businessRoutes from "./modules/business/business.routes.js";
+import connectionRoutes from "./modules/connections/connection.routes.js";
+import invitationRoutes from "./modules/invitations/invitation.routes.js";
+
+import invoiceRoutes from "./modules/invoices/invoice.routes.js";
+import paymentRoutes, {
+  paymentWebhookRouter,
+} from "./modules/payments/payment.routes.js";
+import dashboardRoutes from "./modules/dashboard/dashboard.routes.js";
+import assistantRoutes from "./modules/assistant/assistant.routes.js";
+
+import {
+  notFoundHandler,
+  errorHandler,
+} from "./middleware/error.middleware.js";
 
 const app = express();
 
-// CORS configuration
-app.use(cors({
-  origin: [ENV.CLIENT_URL, 'http://localhost:5173', 'http://127.0.0.1:5173'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-workspace-id', 'x-razorpay-signature'],
-}));
+app.disable("x-powered-by");
 
-// Body parsers with raw body preservation for webhooks
-app.use(express.json({
-  limit: '10mb',
-  verify: (req, res, buf) => {
-    req.rawBody = buf;
-  }
-}));
+app.use(helmet());
 
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(
+  cors({
+    origin: env.FRONTEND_URL,
+    credentials: true,
+  })
+);
+
+// Webhooks must receive the exact bytes signed by Razorpay.
+app.use(
+  `${env.API_PREFIX}/payments/webhooks`,
+  express.raw({ type: "application/json", limit: "1mb" }),
+  paymentWebhookRouter,
+);
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-// Request logger in dev
-if (ENV.NODE_ENV === 'development') {
-  app.use((req, res, next) => {
-    console.log(`[REQ] ${req.method} ${req.path}`);
-    next();
+
+// Health check
+app.get(`${env.API_PREFIX}/health`, (req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: "BizPilot AI backend is running",
+    data: {
+      status: "ok",
+      timestamp: new Date().toISOString(),
+    },
   });
-}
+});
 
-// Mount REST API
-app.use('/api/v1', apiRoutes);
+// Database readiness check
+app.get(`${env.API_PREFIX}/health/ready`, async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
 
-// Error handlers
+    return res.status(200).json({
+      success: true,
+      message: "Backend and database are ready",
+      data: {
+        backend: "connected",
+        database: "connected",
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error("Database health check failed:", error.message);
+
+    return res.status(503).json({
+      success: false,
+      message: "Database is currently unavailable",
+      data: {
+        backend: "running",
+        database: "disconnected",
+      },
+    });
+  }
+});
+
+// Phase 4 API routes
+app.use(`${env.API_PREFIX}/auth`, authRoutes);
+app.use(`${env.API_PREFIX}/users`, userRoutes);
+app.use(`${env.API_PREFIX}/business`, businessRoutes);
+app.use(`${env.API_PREFIX}/connections`, connectionRoutes);
+app.use(`${env.API_PREFIX}/invitations`, invitationRoutes);
+app.use(`${env.API_PREFIX}/invoices`, invoiceRoutes);
+app.use(`${env.API_PREFIX}/payments`, paymentRoutes);
+app.use(`${env.API_PREFIX}/dashboard`, dashboardRoutes);
+app.use(`${env.API_PREFIX}/assistant`, assistantRoutes);
+// Error handling
 app.use(notFoundHandler);
 app.use(errorHandler);
 
