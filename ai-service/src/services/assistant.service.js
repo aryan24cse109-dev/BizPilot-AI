@@ -26,6 +26,11 @@ import {
 } from '../modules/assistant/output/confidence.handler.js';
 
 import {
+  interpretWorkflow,
+  WorkflowInterpretationError
+} from '../modules/assistant/workflow/workflow.interpreter.js';
+
+import {
   HTTP_STATUS,
   ERROR_CODES
 } from '../utils/constants.js';
@@ -151,10 +156,25 @@ export const createAssistantService = ({
     }
 
     // 7. Apply server-side confidence policy.
-    const assistantResponse =
+    const confidenceCheckedResponse =
       applyConfidencePolicy(validatedResponse);
 
-    // 8. Log sanitized response metadata.
+    // 8. Interpret the workflow and validate required parameters.
+    let workflowResult;
+
+    try {
+      workflowResult = interpretWorkflow(confidenceCheckedResponse);
+    } catch (error) {
+      if (error instanceof WorkflowInterpretationError) {
+        throw createInvalidAIResponseError(error);
+      }
+
+      throw error;
+    }
+
+    const assistantResponse = workflowResult.response;
+
+    // 9. Log sanitized response metadata.
     loggerImpl.info('Assistant request interpreted successfully', {
       provider: aiResult.provider,
       detectedLanguage: requestAnalysis.language,
@@ -162,10 +182,12 @@ export const createAssistantService = ({
       finalIntent: assistantResponse.intent,
       responseType: assistantResponse.type,
       confidence: assistantResponse.confidence,
-      isFollowUp: requestAnalysis.isFollowUp
+      isFollowUp: requestAnalysis.isFollowUp,
+      workflowAction: workflowResult.interpretation.action ?? null,
+      workflowComplete: workflowResult.interpretation.isComplete
     });
 
-    // 9. Return the normalized response.
+    // 10. Return the normalized response and workflow interpretation.
     return {
       ...assistantResponse,
 
@@ -176,8 +198,12 @@ export const createAssistantService = ({
         detectedIntent: requestAnalysis.intent,
         intentSource: requestAnalysis.intentSource,
         isFollowUp: requestAnalysis.isFollowUp,
-        needsClarification: requestAnalysis.needsClarification
+        needsClarification:
+          requestAnalysis.needsClarification ||
+          !workflowResult.interpretation.isComplete
       },
+
+      workflowInterpretation: workflowResult.interpretation,
 
       provider: aiResult.provider,
       model: aiResult.model,

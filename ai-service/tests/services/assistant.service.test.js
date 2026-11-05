@@ -67,7 +67,9 @@ test('forces confirmation for SEND_INVOICE', async () => {
     intent: 'SEND_INVOICE',
     workflow: {
       action: 'SEND_INVOICE',
-      parameters: {},
+      parameters: {
+  invoiceNumber: 'INV-100'
+},
       requiresConfirmation: false
     }
   };
@@ -90,7 +92,9 @@ test('forces confirmation for CANCEL_INVOICE', async () => {
     intent: 'CANCEL_INVOICE',
     workflow: {
       action: 'CANCEL_INVOICE',
-      parameters: {},
+      parameters: {
+  invoiceId: 'invoice-123'
+},
       requiresConfirmation: false
     }
   };
