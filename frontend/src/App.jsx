@@ -23,9 +23,7 @@ import { AIAssistantPage } from './pages/AIAssistantPage.jsx';
 import { InvoicesPage } from './pages/InvoicesPage.jsx';
 import { InvoiceDetailsPage } from './pages/InvoiceDetailsPage.jsx';
 import { ClientsPage } from './pages/ClientsPage.jsx';
-import { DiscoverPage } from './pages/DiscoverPage.jsx';
 import { PaymentsPage } from './pages/PaymentsPage.jsx';
-import { MessagesPage } from './pages/MessagesPage.jsx';
 import { AnalyticsPage } from './pages/AnalyticsPage.jsx';
 import { SettingsPage } from './pages/SettingsPage.jsx';
 
@@ -33,9 +31,9 @@ import { SettingsPage } from './pages/SettingsPage.jsx';
 import { ClientHomePage } from './pages/client/ClientHomePage.jsx';
 import { ClientInvoicesPage } from './pages/client/ClientInvoicesPage.jsx';
 import { ClientInvoiceDetailsPage } from './pages/client/ClientInvoiceDetailsPage.jsx';
-import { ClientMessagingPage } from './pages/client/ClientMessagingPage.jsx';
 import { ClientPaymentHistoryPage } from './pages/client/ClientPaymentHistoryPage.jsx';
 import { ClientProfilePage } from './pages/client/ClientProfilePage.jsx';
+import { AcceptInvitationPage } from './pages/AcceptInvitationPage.jsx';
 
 import { LoadingSpinner } from './components/common/LoadingSpinner.jsx';
 
@@ -123,9 +121,7 @@ export function App() {
                     <Route path="invoices" element={<InvoicesPage />} />
                     <Route path="invoices/:id" element={<InvoiceDetailsPage />} />
                     <Route path="clients" element={<ClientsPage />} />
-                    <Route path="discover" element={<DiscoverPage />} />
                     <Route path="payments" element={<PaymentsPage />} />
-                    <Route path="messages" element={<MessagesPage />} />
                     <Route path="analytics" element={<AnalyticsPage />} />
                     <Route path="settings" element={<SettingsPage />} />
                   </Route>
@@ -143,9 +139,11 @@ export function App() {
                     <Route path="invoices" element={<ClientInvoicesPage />} />
                     <Route path="invoices/:id" element={<ClientInvoiceDetailsPage />} />
                     <Route path="history" element={<ClientPaymentHistoryPage />} />
-                    <Route path="messages" element={<ClientMessagingPage />} />
                     <Route path="profile" element={<ClientProfilePage />} />
                   </Route>
+
+                  {/* Direct Invitation Acceptance Link */}
+                  <Route path="/invitations/accept" element={<AcceptInvitationPage />} />
 
                   {/* Root redirect */}
                   <Route path="/" element={<RootRedirect />} />
@@ -156,7 +154,6 @@ export function App() {
                   <Route path="/ai" element={<Navigate to="/business/ai" replace />} />
                   <Route path="/clients" element={<Navigate to="/business/clients" replace />} />
                   <Route path="/payments" element={<Navigate to="/business/payments" replace />} />
-                  <Route path="/messages" element={<Navigate to="/business/messages" replace />} />
                   <Route path="/analytics" element={<Navigate to="/business/analytics" replace />} />
                   <Route path="/settings" element={<Navigate to="/business/settings" replace />} />
 

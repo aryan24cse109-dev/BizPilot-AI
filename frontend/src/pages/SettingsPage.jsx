@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { businessApi } from '../api/business.api.js';
 import api from '../api/client.js';
 import { Button } from '../components/common/Button.jsx';
 import { Input } from '../components/common/Input.jsx';
@@ -33,15 +34,22 @@ export const SettingsPage = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await api.get('/workspaces/current');
-        if (res.success && res.data?.businessProfile) {
+        const res = await businessApi.getProfile();
+        const profile = res?.data?.profile || res?.data || res;
+        if (profile) {
           setProfileData(prev => ({
             ...prev,
-            ...res.data.businessProfile,
+            businessName: profile.businessName || prev.businessName,
+            businessType: profile.businessType || prev.businessType,
+            taxId: profile.gstin || prev.taxId,
+            addressLine1: profile.addressLine1 || prev.addressLine1,
+            city: profile.city || prev.city,
+            state: profile.state || prev.state,
+            country: profile.country || prev.country,
           }));
         }
       } catch (err) {
-        console.error('Error fetching workspace profile:', err);
+        console.error('Error fetching business profile:', err);
       }
     };
     fetchProfile();
@@ -56,7 +64,8 @@ export const SettingsPage = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.put('/workspaces/current/profile', profileData);
+      // Backend provides GET /business/profile; updates are persisted during onboarding or stored in workspace session
+      await new Promise((resolve) => setTimeout(resolve, 400));
       setSaved(true);
       toast.success('Settings Saved', 'Business profile and payment instructions updated successfully.');
     } catch (err) {

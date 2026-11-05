@@ -44,13 +44,11 @@ export const BusinessLayout = () => {
 
   const navItems = [
     { name: 'Dashboard', path: '/business', icon: LayoutDashboard },
-    { name: 'Statistics', path: '/business/analytics', icon: TrendingUp },
-    { name: 'Payment', path: '/business/payments', icon: CreditCard },
-    { name: 'Transactions', path: '/business/invoices', icon: FileText },
-    { name: 'Products', path: '/business/discover', icon: Package },
-    { name: 'Customer', path: '/business/clients', icon: Users },
-    { name: 'Messages', path: '/business/messages', icon: MessageSquare, badge: '5' },
-    { name: 'AI Pilot', path: '/business/ai', icon: Sparkles },
+    { name: 'Invoices', path: '/business/invoices', icon: FileText },
+    { name: 'Clients', path: '/business/clients', icon: Users },
+    { name: 'Payments', path: '/business/payments', icon: CreditCard },
+    { name: 'Analytics', path: '/business/analytics', icon: TrendingUp },
+    { name: 'AI Assistant', path: '/business/ai', icon: Sparkles },
     { name: 'Settings', path: '/business/settings', icon: Settings },
   ];
 

@@ -30,7 +30,6 @@ export const ClientLayout = () => {
     { name: 'Overview', path: '/portal', icon: LayoutDashboard, exact: true },
     { name: 'My Invoices', path: '/portal/invoices', icon: FileText },
     { name: 'Payment History', path: '/portal/history', icon: CreditCard },
-    { name: 'Messages', path: '/portal/messages', icon: MessageSquare, badge: '2' },
     { name: 'Account Profile', path: '/portal/profile', icon: User },
   ];
 

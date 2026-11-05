@@ -336,7 +336,7 @@ export const InvoicesPage = () => {
                   <tr
                     key={inv.id}
                     className="hover:bg-[#FAF8F5] transition cursor-pointer group"
-                    onClick={() => navigate(`/invoices/${inv.id}`)}
+                    onClick={() => navigate(activeRole === 'business' ? `/business/invoices/${inv.id}` : `/portal/invoices/${inv.id}`)}
                   >
                     <td className="py-3.5 px-4 font-mono font-bold text-[#1C1D22] flex items-center gap-2">
                       <span>{inv.invoiceNumber}</span>
@@ -374,7 +374,7 @@ export const InvoicesPage = () => {
                       <Badge status={inv.status} />
                     </td>
                     <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                         <a
                           href={invoicesApi.downloadPdfUrl(inv.id)}
                           download={`Invoice-${inv.invoiceNumber}.pdf`}
@@ -383,8 +383,26 @@ export const InvoicesPage = () => {
                         >
                           <Download className="w-3.5 h-3.5" />
                         </a>
+                        {activeRole === 'business' && inv.status === 'DRAFT' && (
+                          <button
+                            onClick={() => handleSendInvoice(inv.id)}
+                            className="p-1.5 rounded-lg bg-[#FAF8F5] hover:bg-white text-emerald-600 border border-[#E8E4DC] transition"
+                            title="Send Invoice to Client"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {activeRole === 'business' && inv.status !== 'PAID' && inv.status !== 'CANCELLED' && (
+                          <button
+                            onClick={() => handleCancelInvoice(inv.id)}
+                            className="p-1.5 rounded-lg bg-[#FAF8F5] hover:bg-white text-rose-500 border border-[#E8E4DC] transition"
+                            title="Cancel Invoice"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button
-                          onClick={() => navigate(`/invoices/${inv.id}`)}
+                          onClick={() => navigate(activeRole === 'business' ? `/business/invoices/${inv.id}` : `/portal/invoices/${inv.id}`)}
                           className="p-1.5 rounded-lg bg-[#FAF8F5] hover:bg-white text-slate-600 hover:text-[#1C1D22] border border-[#E8E4DC] transition"
                           title="View Details"
                         >
