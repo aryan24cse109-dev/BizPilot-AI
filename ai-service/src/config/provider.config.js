@@ -4,7 +4,7 @@ export const PROVIDER_CONFIG = Object.freeze({
   sarvam: Object.freeze({
     name: 'sarvam',
     apiKey: env.SARVAM_API_KEY ?? null,
-    model: env.SARVAM_MODEL ?? null,
+    model: env.SARVAM_MODEL ?? 'sarvam-105b',
     enabled: Boolean(env.SARVAM_API_KEY)
   }),
 
@@ -20,9 +20,7 @@ export const getProviderConfig = (providerName) => {
   const provider = PROVIDER_CONFIG[providerName];
 
   if (!provider) {
-    throw new Error(
-      `Unsupported AI provider: ${providerName}`
-    );
+    throw new Error(`Unsupported AI provider: ${providerName}`);
   }
 
   return provider;
