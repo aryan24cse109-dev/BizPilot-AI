@@ -8,48 +8,61 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Colors extracted from reference design
+        zarss: {
+          beige: '#EFECE6',         // Outer application background
+          cream: '#FAF8F5',         // Light inner surface
+          dark: '#1C1D22',          // Sidebar & dark capsule bars
+          darker: '#16171B',        // Deepest dark
+          gold: '#F5C869',          // Active sidebar accent & indicators
+          goldMuted: '#ECCB6F',
+          goldDark: '#3A2E12',
+          sage: '#CFDDC8',          // KPI 1 pastel sage
+          sagePill: '#B6C8AE',
+          sageDark: '#20331E',
+          periwinkle: '#8E9EF8',    // KPI 3 pastel purple / periwinkle
+          periwinkleBtn: '#5D6FE8',
+          periwinkleDark: '#4C5FD6',
+          track: '#EFECE6',         // Capsule chart track background
+          textMuted: '#8E9297',     // Sidebar inactive items
+        },
         // Master Design System Colors
         canvas: {
-          light: '#FAFAF7', // Warm white
-          dark: '#15191B',  // Deep charcoal
+          light: '#EFECE6', // Warm stone beige
+          dark: '#141518',  // Deep charcoal
         },
         surface: {
-          light: '#F1F3F0', // Secondary surface light
-          dark: '#1C2225',  // Secondary surface dark
-          darker: '#111416',
+          light: '#FFFFFF',
+          dark: '#1C1D22',
+          secondary: '#FAF8F5',
         },
         emerald: {
-          primary: '#17A673', // Main Emerald Accent
-          muted: '#DDF5E9',   // Light Muted Green
-          dark: '#116B4D',    // Deep Forest Green
+          primary: '#17A673',
+          muted: '#DDF5E9',
+          dark: '#116B4D',
           hover: '#138c60',
         },
         charcoal: {
-          950: '#15191B',
-          900: '#1C2225',
-          850: '#22292D',
-          800: '#2A3338',
-          700: '#3D4950',
-          600: '#54636B',
-        },
-        brand: {
-          50: '#F2FAF6',
-          100: '#DDF5E9',
-          200: '#B4E8D1',
-          300: '#7CD6B0',
-          400: '#43BE8E',
-          500: '#17A673',
-          600: '#138C60',
-          700: '#116B4D',
+          950: '#141518',
+          900: '#1C1D22',
+          850: '#23252B',
+          800: '#2B2E36',
+          700: '#3D424D',
+          600: '#545B6B',
         },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
+      borderRadius: {
+        '3xl': '1.5rem',
+        '4xl': '2rem',
+        'app': '2.25rem', // 36px smooth frame radius like the reference image
+      },
       boxShadow: {
+        'app-frame': '0 25px 60px -15px rgba(0, 0, 0, 0.12), 0 0 1px 1px rgba(0, 0, 0, 0.05)',
         'subtle': '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03)',
-        'card': '0 4px 12px 0 rgba(0, 0, 0, 0.05)',
-        'modal': '0 20px 40px -15px rgba(0, 0, 0, 0.25)',
+        'card': '0 4px 14px 0 rgba(0, 0, 0, 0.04)',
       }
     },
   },

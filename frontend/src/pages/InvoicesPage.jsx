@@ -196,11 +196,11 @@ export const InvoicesPage = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            <FileText className="w-6 h-6 text-emerald-400" />
+          <h1 className="text-xl md:text-2xl font-black text-[#1C1D22] tracking-tight flex items-center gap-2">
+            <FileText className="w-6 h-6 text-[#1C1D22]" />
             {activeRole === 'business' ? 'Invoicing Control & Ledger' : 'My Incoming Invoices'}
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-[#8E9297] font-medium mt-1">
             {activeRole === 'business'
               ? 'Create, issue, and manage verified digital tax invoices with instant payment tracking'
               : 'Review authoritative bills issued to you and complete verified payments'}
@@ -223,22 +223,25 @@ export const InvoicesPage = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+      <div className="bg-white p-4 rounded-3xl border border-[#E8E4DC] shadow-xs flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
         {/* Status Tabs */}
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-          {statusTabs.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setStatusFilter(tab.value)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
-                statusFilter === tab.value
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                  : 'bg-charcoal-800/80 text-slate-400 hover:text-slate-200 border border-slate-700/50'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          {statusTabs.map((tab) => {
+            const isTabActive = statusFilter === tab.value;
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setStatusFilter(tab.value)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+                  isTabActive
+                    ? 'bg-[#1C1D22] text-white shadow-xs'
+                    : 'bg-[#FAF8F5] text-[#8E9297] hover:text-[#1C1D22] border border-[#E8E4DC]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Search Input */}
@@ -250,7 +253,7 @@ export const InvoicesPage = () => {
               placeholder="Search invoice # or client..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-charcoal-950 border border-slate-700/60 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 w-48 sm:w-60"
+              className="bg-[#FAF8F5] border border-[#E8E4DC] rounded-xl pl-9 pr-3 py-1.5 text-xs text-[#1C1D22] placeholder-slate-400 focus:outline-none focus:border-slate-400 w-48 sm:w-60"
             />
           </div>
           <Button variant="secondary" size="sm" type="submit">
@@ -275,58 +278,58 @@ export const InvoicesPage = () => {
           onAction={activeRole === 'business' ? () => setShowCreateModal(true) : undefined}
         />
       ) : (
-        <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800/80">
+        <div className="bg-white rounded-3xl overflow-hidden border border-[#E8E4DC] shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-charcoal-900/80 text-slate-400 border-b border-slate-800">
+              <thead className="bg-[#FAF8F5] text-[#8E9297] border-b border-[#E8E4DC]">
                 <tr>
-                  <th className="py-3.5 px-4 font-semibold">Invoice #</th>
-                  <th className="py-3.5 px-4 font-semibold">{activeRole === 'business' ? 'Client' : 'Issuer'}</th>
-                  <th className="py-3.5 px-4 font-semibold">Issue Date</th>
-                  <th className="py-3.5 px-4 font-semibold">Due Date</th>
-                  <th className="py-3.5 px-4 font-semibold">Total Amount</th>
-                  <th className="py-3.5 px-4 font-semibold">Balance Due</th>
-                  <th className="py-3.5 px-4 font-semibold">Status</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">Actions</th>
+                  <th className="py-3.5 px-4 font-bold">Invoice #</th>
+                  <th className="py-3.5 px-4 font-bold">{activeRole === 'business' ? 'Client' : 'Issuer'}</th>
+                  <th className="py-3.5 px-4 font-bold">Issue Date</th>
+                  <th className="py-3.5 px-4 font-bold">Due Date</th>
+                  <th className="py-3.5 px-4 font-bold">Total Amount</th>
+                  <th className="py-3.5 px-4 font-bold">Balance Due</th>
+                  <th className="py-3.5 px-4 font-bold">Status</th>
+                  <th className="py-3.5 px-4 font-bold text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/50">
+              <tbody className="divide-y divide-[#F0ECE4]">
                 {invoices.map((inv) => (
                   <tr
                     key={inv.id}
-                    className="hover:bg-charcoal-800/30 transition cursor-pointer group"
+                    className="hover:bg-[#FAF8F5] transition cursor-pointer group"
                     onClick={() => navigate(`/invoices/${inv.id}`)}
                   >
-                    <td className="py-3.5 px-4 font-mono font-bold text-emerald-400 flex items-center gap-2">
+                    <td className="py-3.5 px-4 font-mono font-bold text-[#1C1D22] flex items-center gap-2">
                       <span>{inv.invoiceNumber}</span>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           copyToClipboard(inv.invoiceNumber, 'Invoice Number');
                         }}
-                        className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-white transition"
+                        className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-[#1C1D22] transition"
                         title="Copy invoice number"
                       >
                         <Copy className="w-3 h-3" />
                       </button>
                     </td>
-                    <td className="py-3.5 px-4 font-medium text-slate-200">
+                    <td className="py-3.5 px-4 font-bold text-[#1C1D22]">
                       {activeRole === 'business' ? (inv.client?.name || 'Client') : (inv.workspace?.name || 'TechNova Solutions')}
                     </td>
-                    <td className="py-3.5 px-4 text-slate-400">
+                    <td className="py-3.5 px-4 font-medium text-[#8E9297]">
                       {new Date(inv.issueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className="py-3.5 px-4 text-slate-300">
+                    <td className="py-3.5 px-4 font-medium text-[#8E9297]">
                       {new Date(inv.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className="py-3.5 px-4 font-mono font-semibold text-slate-100">
+                    <td className="py-3.5 px-4 font-mono font-bold text-[#1C1D22]">
                       ₹{Number(inv.totalAmount).toLocaleString('en-IN')}
                     </td>
-                    <td className="py-3.5 px-4 font-mono font-bold text-slate-100">
+                    <td className="py-3.5 px-4 font-mono font-bold text-[#1C1D22]">
                       {Number(inv.balanceDue) > 0 ? (
-                        <span className="text-amber-400">₹{Number(inv.balanceDue).toLocaleString('en-IN')}</span>
+                        <span className="text-amber-600">₹{Number(inv.balanceDue).toLocaleString('en-IN')}</span>
                       ) : (
-                        <span className="text-emerald-400">₹0 (Paid)</span>
+                        <span className="text-emerald-600">₹0 (Paid)</span>
                       )}
                     </td>
                     <td className="py-3.5 px-4">
@@ -337,14 +340,14 @@ export const InvoicesPage = () => {
                         <a
                           href={invoicesApi.downloadPdfUrl(inv.id)}
                           download={`Invoice-${inv.invoiceNumber}.pdf`}
-                          className="p-1.5 rounded-lg bg-charcoal-800 hover:bg-charcoal-700 text-slate-300 hover:text-emerald-400 border border-slate-700/60 transition"
+                          className="p-1.5 rounded-lg bg-[#FAF8F5] hover:bg-white text-slate-600 hover:text-[#1C1D22] border border-[#E8E4DC] transition"
                           title="Download PDF"
                         >
                           <Download className="w-3.5 h-3.5" />
                         </a>
                         <button
                           onClick={() => navigate(`/invoices/${inv.id}`)}
-                          className="p-1.5 rounded-lg bg-charcoal-800 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 border border-slate-700/60 transition"
+                          className="p-1.5 rounded-lg bg-[#FAF8F5] hover:bg-white text-slate-600 hover:text-[#1C1D22] border border-[#E8E4DC] transition"
                           title="View Details"
                         >
                           <Eye className="w-3.5 h-3.5" />

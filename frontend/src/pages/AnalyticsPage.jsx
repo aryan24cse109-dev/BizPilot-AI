@@ -52,36 +52,36 @@ export const AnalyticsPage = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-          <TrendingUp className="w-6 h-6 text-emerald-400" />
+        <h1 className="text-xl md:text-2xl font-black text-[#1C1D22] tracking-tight flex items-center gap-2">
+          <TrendingUp className="w-6 h-6 text-[#1C1D22]" />
           Financial Intelligence & Collection Insights
         </h1>
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-[#8E9297] font-medium mt-1">
           Algorithmic analytics calculated strictly from verified database records
         </p>
       </div>
 
       {/* Forecasting Banner */}
       {data?.forecasting && (
-        <div className="glass-panel p-6 rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-charcoal-900 to-teal-950/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl">
+        <div className="p-6 rounded-3xl border border-[#E8E4DC] bg-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xs">
           <div className="space-y-1.5 max-w-xl">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">
                 Historical Collection Forecast
               </span>
             </div>
-            <h3 className="text-lg font-black text-white">
-              Projected Next Month Cashflow: <span className="text-emerald-400 font-mono">₹{data.forecasting.projectedNextMonth.toLocaleString('en-IN')}</span>
+            <h3 className="text-lg font-black text-[#1C1D22]">
+              Projected Next Month Cashflow: <span className="text-emerald-700 font-mono">₹{data.forecasting.projectedNextMonth.toLocaleString('en-IN')}</span>
             </h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-[#8E9297] leading-relaxed">
               {data.forecasting.basis} Average monthly run rate is ₹{data.forecasting.lastThreeMonthAverage.toLocaleString('en-IN')}.
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-charcoal-950/80 border border-slate-800 text-xs shrink-0 font-mono">
-            <span className="text-slate-400 block text-[10px] uppercase">90-Day Verified Avg</span>
-            <span className="text-lg font-bold text-slate-100">
+          <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-[#E8E4DC] text-xs shrink-0 font-mono">
+            <span className="text-[#8E9297] font-bold block text-[10px] uppercase">90-Day Verified Avg</span>
+            <span className="text-lg font-black text-[#1C1D22]">
               ₹{data.forecasting.lastThreeMonthAverage.toLocaleString('en-IN')}
             </span>
           </div>
@@ -91,29 +91,30 @@ export const AnalyticsPage = () => {
       {/* 2-Column Grid: Aging & Client-wise Revenue */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Aging Analysis Chart */}
-        <div className="glass-panel p-6 rounded-2xl">
+        <div className="bg-white p-6 rounded-3xl border border-[#E8E4DC] shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-400" />
+              <h3 className="text-sm font-bold text-[#1C1D22] flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-500" />
                 Accounts Receivable Aging Analysis
               </h3>
-              <p className="text-xs text-slate-400">Aging brackets of unpaid balances</p>
+              <p className="text-xs text-[#8E9297] font-medium">Aging brackets of unpaid balances</p>
             </div>
           </div>
 
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data?.agingAnalysis || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#232b3e" vertical={false} />
-                <XAxis dataKey="label" stroke="#64748b" fontSize={11} tickLine={false} />
-                <YAxis stroke="#64748b" fontSize={11} tickLine={false} tickFormatter={(v) => `₹${v}`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#F0ECE4" vertical={false} />
+                <XAxis dataKey="label" stroke="#8E9297" fontSize={11} tickLine={false} />
+                <YAxis stroke="#8E9297" fontSize={11} tickLine={false} tickFormatter={(v) => `₹${v}`} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#10141d',
-                    borderColor: '#343f56',
-                    borderRadius: '12px',
+                    backgroundColor: '#FFFFFF',
+                    borderColor: '#E8E4DC',
+                    borderRadius: '16px',
                     fontSize: '12px',
+                    color: '#1C1D22',
                   }}
                   formatter={(val) => [`₹${Number(val).toLocaleString('en-IN')}`, 'Outstanding']}
                 />

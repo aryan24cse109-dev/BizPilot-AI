@@ -317,28 +317,28 @@ export const AIAssistantPage = () => {
   const draftTotals = displayDraft ? calculateDraftTotals(displayDraft) : { subtotal: 0, taxAmount: 0, totalAmount: 0 };
 
   return (
-    <div className="h-[calc(100vh-7.5rem)] flex flex-col glass-panel rounded-2xl border border-slate-800/80 overflow-hidden shadow-2xl">
+    <div className="h-[calc(100vh-7.5rem)] flex flex-col bg-white rounded-3xl border border-[#E8E4DC] overflow-hidden shadow-xs">
       {/* Header */}
-      <div className="p-4 px-6 border-b border-slate-800/80 bg-charcoal-900/90 flex items-center justify-between">
+      <div className="p-4 px-6 border-b border-[#E8E4DC] bg-[#FAF8F5] flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-charcoal-950 flex items-center justify-center font-bold shadow-md shadow-emerald-500/20">
-            <Bot className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-xl bg-[#1C1D22] text-white flex items-center justify-center font-bold shadow-xs">
+            <Bot className="w-5 h-5 text-[#F5C869]" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+            <h2 className="text-sm font-bold text-[#1C1D22] flex items-center gap-2">
               BizPilot AI Business Operator
-              <span className="text-[10px] bg-emerald-500/15 text-emerald-400 font-mono px-2 py-0.5 rounded-full border border-emerald-500/30">
+              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
                 Sarvam Saaras & Gemini
               </span>
             </h2>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-[#8E9297] font-medium">
               Multilingual Voice & Text Assistant (English • Hindi • Hinglish)
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs px-2.5 py-1 rounded-lg bg-charcoal-800 border border-slate-700/60 text-slate-300 font-medium">
+          <span className="text-xs px-2.5 py-1 rounded-xl bg-white border border-[#E8E4DC] text-[#1C1D22] font-bold">
             {activeWorkspace?.name || 'Workspace'}
           </span>
           <button
@@ -354,7 +354,7 @@ export const AIAssistantPage = () => {
               setActiveDraft(null);
               toast.info('Chat Cleared', 'Conversation session restarted.');
             }}
-            className="p-1.5 rounded-lg bg-charcoal-800 hover:bg-charcoal-700 text-slate-400 hover:text-slate-200 transition"
+            className="p-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-500 hover:text-[#1C1D22] border border-[#E8E4DC] transition"
             title="Restart conversation"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -363,7 +363,7 @@ export const AIAssistantPage = () => {
       </div>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-[#FDFCFB]">
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -375,8 +375,8 @@ export const AIAssistantPage = () => {
             <div
               className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-xs font-bold ${
                 msg.role === 'user'
-                  ? 'bg-slate-700 text-slate-200'
-                  : 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400'
+                  ? 'bg-[#1C1D22] text-white'
+                  : 'bg-[#CFDDC8] text-[#1A3018]'
               }`}
             >
               {msg.role === 'user' ? (user?.name?.slice(0, 1) || 'U') : <Sparkles className="w-4 h-4" />}
@@ -386,8 +386,8 @@ export const AIAssistantPage = () => {
             <div
               className={`rounded-2xl p-4 text-xs md:text-sm leading-relaxed ${
                 msg.role === 'user'
-                  ? 'bg-emerald-600 text-white rounded-tr-none shadow-md shadow-emerald-600/20'
-                  : 'bg-charcoal-900 border border-slate-700/80 text-slate-200 rounded-tl-none shadow-lg'
+                  ? 'bg-[#1C1D22] text-white rounded-tr-none shadow-xs'
+                  : 'bg-white border border-[#E8E4DC] text-[#1C1D22] rounded-tl-none shadow-xs'
               }`}
             >
               <div className="whitespace-pre-wrap font-sans">

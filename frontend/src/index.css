@@ -4,36 +4,153 @@
 
 @layer base {
   :root {
-    --bg-primary: #FAFAF7;
+    --bg-primary: #F7F5F0;
     --bg-surface: #FFFFFF;
-    --bg-secondary: #F1F3F0;
-    --border-color: #E2E8F0;
-    --text-primary: #15191B;
-    --text-secondary: #64748B;
-    --accent-emerald: #17A673;
+    --bg-secondary: #FAF8F5;
+    --border-color: #E8E4DC;
+    --text-primary: #1C1D22;
+    --text-secondary: #8E9297;
+    --accent-gold: #F5C869;
   }
 
-  .dark {
-    --bg-primary: #15191B;
-    --bg-surface: #1C2225;
-    --bg-secondary: #22292D;
-    --border-color: #2A3338;
-    --text-primary: #F8FAFC;
-    --text-secondary: #94A3B8;
-    --accent-emerald: #17A673;
-  }
-
-  body {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
+  html, body {
+    background-color: #F7F5F0 !important;
+    color: #1C1D22 !important;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    margin: 0;
+    padding: 0;
   }
 }
 
-/* Custom Scrollbar */
+/* Ensure text inside main content viewport defaults to crisp dark text */
+main {
+  color: #1C1D22;
+}
+
+/* Fix titles with text-white inside the main light container */
+main h1.text-white,
+main h2.text-white,
+main h3.text-white,
+main h4.text-white {
+  color: #1C1D22 !important;
+}
+
+/* Make sure inputs inside main are properly readable */
+main input,
+main select,
+main textarea {
+  color: #1C1D22 !important;
+}
+
+main input::placeholder,
+main textarea::placeholder {
+  color: #8E9297 !important;
+}
+
+/* Universal Fintech Card & Panel Classes */
+.glass-panel,
+.saas-card {
+  background-color: #FFFFFF !important;
+  border: 1px solid #E8E4DC !important;
+  border-radius: 1.25rem !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03) !important;
+  color: #1C1D22 !important;
+}
+
+.glass-panel-hover:hover,
+.saas-card-interactive:hover {
+  border-color: #D2CCC1 !important;
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Override dark backgrounds inside tables & panels for pristine visibility */
+main .bg-charcoal-950,
+main .bg-charcoal-900 {
+  background-color: #FFFFFF !important;
+  color: #1C1D22 !important;
+  border-color: #E8E4DC !important;
+}
+
+main .bg-charcoal-800,
+main .bg-charcoal-850 {
+  background-color: #FAF8F5 !important;
+  color: #1C1D22 !important;
+  border-color: #E8E4DC !important;
+}
+
+/* Fix table headers and rows */
+main thead {
+  background-color: #FAF8F5 !important;
+  color: #8E9297 !important;
+  border-bottom: 1px solid #E8E4DC !important;
+}
+
+main thead th {
+  color: #8E9297 !important;
+  font-weight: 700 !important;
+}
+
+main tbody tr {
+  border-bottom: 1px solid #F0ECE4 !important;
+  transition: background-color 0.15s ease;
+}
+
+main tbody tr:hover {
+  background-color: #FAF8F5 !important;
+}
+
+main tbody td {
+  color: #1C1D22 !important;
+}
+
+/* Explicit Zarss color utilities */
+.bg-zarss-dark {
+  background-color: #1C1D22 !important;
+}
+
+.bg-zarss-beige {
+  background-color: #EFECE6 !important;
+}
+
+.bg-zarss-cream {
+  background-color: #FAF8F5 !important;
+}
+
+.bg-zarss-sage {
+  background-color: #CFDDC8 !important;
+}
+
+.bg-zarss-gold {
+  background-color: #F9DC90 !important;
+}
+
+.bg-zarss-periwinkle {
+  background-color: #8E9EF8 !important;
+}
+
+.bg-zarss-track {
+  background-color: #ECE7DD !important;
+}
+
+.text-zarss-gold {
+  color: #F5C869 !important;
+}
+
+.text-zarss-muted {
+  color: #8E9297 !important;
+}
+
+.text-zarss-dark {
+  color: #1C1D22 !important;
+}
+
+.border-zarss-border {
+  border-color: #E8E4DC !important;
+}
+
+/* Custom Sleek Scrollbar */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -44,31 +161,15 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.2);
-  border-radius: 4px;
+  background: rgba(142, 146, 151, 0.35);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.4);
+  background: rgba(142, 146, 151, 0.6);
 }
 
-/* Fintech card & panel styles */
-.saas-card {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 1rem;
-}
-
-.saas-card-interactive {
-  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.saas-card-interactive:hover {
-  border-color: rgba(23, 166, 115, 0.4);
-  transform: translateY(-1px);
-}
-
-/* Print Styles for Invoices and Receipts */
+/* Print Styles */
 @media print {
   aside, header, nav, button, .no-print {
     display: none !important;
@@ -76,17 +177,6 @@
   
   body {
     background: #ffffff !important;
-    color: #111827 !important;
-  }
-
-  .saas-card {
-    background: #ffffff !important;
-    color: #111827 !important;
-    border: none !important;
-    box-shadow: none !important;
-  }
-
-  * {
     color: #111827 !important;
   }
 }

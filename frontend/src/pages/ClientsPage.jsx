@@ -101,11 +101,11 @@ export const ClientsPage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            <Users className="w-6 h-6 text-emerald-400" />
+          <h1 className="text-xl md:text-2xl font-black text-[#1C1D22] tracking-tight flex items-center gap-2">
+            <Users className="w-6 h-6 text-[#1C1D22]" />
             Client Directory & Network Connections
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-[#8E9297] font-medium mt-1">
             Build verified business connections to issue invoices and collaborate securely
           </p>
         </div>
@@ -121,36 +121,36 @@ export const ClientsPage = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+      <div className="flex items-center gap-2 border-b border-[#E8E4DC] pb-3">
         <button
           onClick={() => setActiveTab('connected')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
             activeTab === 'connected'
-              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-[#1C1D22] text-white shadow-xs'
+              : 'bg-[#FAF8F5] text-[#8E9297] hover:text-[#1C1D22] border border-[#E8E4DC]'
           }`}
         >
           Connected Clients ({connections.accepted?.length || 0})
         </button>
         <button
           onClick={() => setActiveTab('incoming')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 ${
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
             activeTab === 'incoming'
-              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-[#1C1D22] text-white shadow-xs'
+              : 'bg-[#FAF8F5] text-[#8E9297] hover:text-[#1C1D22] border border-[#E8E4DC]'
           }`}
         >
           Pending Requests
           {connections.pendingIncoming?.length > 0 && (
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           )}
         </button>
         <button
           onClick={() => setActiveTab('discover')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
             activeTab === 'discover'
-              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-[#1C1D22] text-white shadow-xs'
+              : 'bg-[#FAF8F5] text-[#8E9297] hover:text-[#1C1D22] border border-[#E8E4DC]'
           }`}
         >
           Find New Clients
@@ -177,19 +177,19 @@ export const ClientsPage = () => {
                 return (
                   <div
                     key={conn.id}
-                    className="glass-panel p-5 rounded-2xl border border-slate-800/80 hover:border-emerald-500/30 transition shadow-lg flex flex-col justify-between space-y-4"
+                    className="bg-white p-5 rounded-3xl border border-[#E8E4DC] hover:border-slate-400 transition shadow-xs flex flex-col justify-between space-y-4"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-slate-200">
+                        <div className="w-10 h-10 rounded-2xl bg-[#FAF8F5] border border-[#E8E4DC] flex items-center justify-center font-bold text-[#1C1D22]">
                           {client.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <h3 className="text-sm font-bold text-white leading-tight">{client.name}</h3>
-                          <p className="text-xs text-slate-400 mt-0.5">{client.email}</p>
+                          <h3 className="text-sm font-bold text-[#1C1D22] leading-tight">{client.name}</h3>
+                          <p className="text-xs text-[#8E9297] font-medium mt-0.5">{client.email}</p>
                         </div>
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold flex items-center gap-1">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#CFDDC8] text-[#1A3018] font-bold flex items-center gap-1">
                         <ShieldCheck className="w-3 h-3" /> Connected
                       </span>
                     </div>

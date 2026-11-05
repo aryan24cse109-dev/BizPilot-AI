@@ -11,20 +11,20 @@ export const Button = ({
   className = '',
   icon: Icon,
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-charcoal-950 disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98]';
+  const baseStyles = 'inline-flex items-center justify-center font-bold rounded-xl transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98]';
 
   const variants = {
-    primary: 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-charcoal-950 font-semibold shadow-md shadow-emerald-500/20 focus:ring-emerald-500',
-    secondary: 'bg-charcoal-800 hover:bg-charcoal-700 text-slate-200 border border-slate-700/60 focus:ring-slate-500',
-    outline: 'border border-emerald-500/50 hover:bg-emerald-500/10 text-emerald-400 focus:ring-emerald-500',
-    danger: 'bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/20 focus:ring-rose-500',
-    ghost: 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 focus:ring-slate-500',
+    primary: 'bg-[#1C1D22] hover:bg-[#2C2D35] text-white shadow-xs focus:ring-slate-400',
+    secondary: 'bg-white hover:bg-[#FAF8F5] text-[#1C1D22] border border-[#E8E4DC] shadow-xs focus:ring-slate-300',
+    outline: 'border border-[#E8E4DC] bg-transparent hover:bg-white text-[#1C1D22] focus:ring-slate-300',
+    danger: 'bg-rose-600 hover:bg-rose-500 text-white shadow-xs focus:ring-rose-500',
+    ghost: 'text-slate-600 hover:text-[#1C1D22] hover:bg-slate-100 focus:ring-slate-300',
   };
 
   const sizes = {
     sm: 'text-xs px-3 py-1.5 gap-1.5',
-    md: 'text-sm px-4 py-2.5 gap-2',
-    lg: 'text-base px-5 py-3 gap-2.5',
+    md: 'text-xs px-4 py-2.5 gap-2',
+    lg: 'text-sm px-5 py-3 gap-2.5',
   };
 
   return (

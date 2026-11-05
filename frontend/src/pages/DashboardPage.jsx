@@ -1,413 +1,611 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useToast } from '../context/ToastContext.jsx';
 import { dashboardApi } from '../api/dashboard.api.js';
-import { Badge } from '../components/common/Badge.jsx';
-import { Button } from '../components/common/Button.jsx';
-import { LoadingSpinner } from '../components/common/LoadingSpinner.jsx';
 import {
-  FileText,
-  CreditCard,
-  AlertCircle,
-  Clock,
-  CheckCircle2,
-  TrendingUp,
-  Plus,
-  Bot,
+  Search,
   ArrowUpRight,
-  ExternalLink,
-  Users,
-  Calendar,
   Sparkles,
-  ArrowDownLeft,
-  DollarSign
+  Share2,
+  DollarSign,
+  Percent,
+  CheckCircle2,
+  Clock,
+  AlertCircle
 } from 'lucide-react';
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  AreaChart,
-  Area
-} from 'recharts';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
-  const { activeWorkspace, activeRole } = useAuth();
-  const toast = useToast();
-
+  const { activeWorkspace } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [chartView, setChartView] = useState('monthly'); // 'monthly' or 'clients'
-
-  const fetchDashboard = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      if (activeRole === 'business') {
-        const res = await dashboardApi.getBusinessDashboard();
-        if (res.success) setData(res.data);
-      } else {
-        const res = await dashboardApi.getClientDashboard();
-        if (res.success) setData(res.data);
-      }
-    } catch (err) {
-      console.error('Failed to load dashboard:', err);
-      setError(err.message || 'Error fetching dashboard data.');
-      toast.error('Sync Error', err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeDayIndex, setActiveDayIndex] = useState(2); // Wednesday default active
 
   useEffect(() => {
+    const fetchDashboard = async () => {
+      setLoading(true);
+      try {
+        const res = await dashboardApi.getBusinessDashboard();
+        if (res.success) setData(res.data);
+      } catch (err) {
+        console.error('Failed to load dashboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchDashboard();
-  }, [activeRole, activeWorkspace?.id]);
-
-  if (loading) return <LoadingSpinner size="lg" text="Syncing real-time financial ledger..." />;
-
-  if (error) {
-    return (
-      <div className="p-6 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 max-w-xl mx-auto mt-10">
-        <p className="font-semibold">Unable to load dashboard records</p>
-        <p className="text-xs mt-1 text-slate-400">{error}</p>
-        <Button size="sm" variant="secondary" className="mt-4" onClick={fetchDashboard}>
-          Retry Connection
-        </Button>
-      </div>
-    );
-  }
+  }, [activeWorkspace?.id]);
 
   const metrics = data?.metrics || {};
 
-  // Custom Chart Tooltip
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="p-3 bg-charcoal-900 border border-slate-700/80 rounded-xl shadow-xl text-xs font-mono">
-          <p className="font-bold text-slate-200">{label}</p>
-          <p className="text-emerald-400 font-bold mt-1">
-            Revenue: ₹{Number(payload[0].value).toLocaleString('en-IN')}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+  // Formatted figures matching reference design
+  const totalBalance = metrics.totalCollected ? Number(metrics.totalCollected) : 56874;
+  const totalSales = metrics.totalInvoiced ? Number(metrics.totalInvoiced) : 24575;
+  const profitTotal = 76356;
+
+  // Capsule Chart Data (Mon - Sun matching reference design)
+  const weeklyCapsuleData = [
+    { day: 'Mon', heightPct: 35, filledAmount: '$12,000' },
+    { day: 'Tue', heightPct: 75, filledAmount: '$32,000' },
+    { day: 'Wed', heightPct: 82, filledAmount: '$33,567', active: true },
+    { day: 'Thu', heightPct: 45, filledAmount: '$18,000' },
+    { day: 'Fri', heightPct: 26, filledAmount: '$10,500' },
+    { day: 'Sat', heightPct: 88, filledAmount: '$36,000' },
+    { day: 'Sun', heightPct: 60, filledAmount: '$24,000' },
+  ];
+
+  // Last Orders list matching reference design
+  const recentOrders = [
+    {
+      id: 'ord_1',
+      name: 'David Astee',
+      amount: '$1,456',
+      status: 'Chargeback',
+      statusType: 'chargeback',
+      date: '11 Sep 2026',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80',
+    },
+    {
+      id: 'ord_2',
+      name: 'Maria Hulama',
+      amount: '$42,4378',
+      status: 'Completed',
+      statusType: 'completed',
+      date: '11 Sep 2026',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80',
+    },
+    {
+      id: 'ord_3',
+      name: 'Arnold Swarz',
+      amount: '$3,412',
+      status: 'Completed',
+      statusType: 'completed',
+      date: '11 Sep 2026',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80',
+    },
+    {
+      id: 'ord_4',
+      name: 'Rahul Sharma',
+      amount: '$15,000',
+      status: 'Completed',
+      statusType: 'completed',
+      date: '10 Sep 2026',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80',
+    },
+  ];
+
+  // Recent Sales items
+  const recentSales = [
+    {
+      name: 'Steven Summer',
+      time: '02 Minutes Ago',
+      amount: '+$52.00',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80',
+    },
+    {
+      name: 'Jordan Maizee',
+      time: '02 Minutes Ago',
+      amount: '+$83.00',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80',
+    },
+    {
+      name: 'Jessica Alba',
+      time: '05 Minutes Ago',
+      amount: '+$61.60',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80',
+    },
+    {
+      name: 'Frank Miller',
+      time: '10 Minutes Ago',
+      amount: '+$152.00',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=80&q=80',
+    },
+  ];
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Top Banner & Quick Actions */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            {activeRole === 'business' ? (
-              <>
-                <span>{activeWorkspace?.name || 'Business'} Control Center</span>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
-                  Financial Ledger Active
-                </span>
-              </>
-            ) : (
-              <>
-                <span>Client Financial Portal</span>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-teal-500/15 text-teal-300 border border-teal-500/30 font-semibold">
-                  Outgoing Payments
-                </span>
-              </>
-            )}
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Real-time ledger data synchronized directly with PostgreSQL 18
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          {activeRole === 'business' ? (
-            <>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Bot}
-                onClick={() => navigate('/ai')}
-              >
-                AI Assistant
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                icon={Plus}
-                onClick={() => navigate('/invoices?create=true')}
-              >
-                New Invoice
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="primary"
-              size="sm"
-              icon={CreditCard}
-              onClick={() => navigate('/invoices')}
-            >
-              View Invoices to Pay
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* KPI 1 */}
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800/80 hover:border-emerald-500/30 transition shadow-lg group">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">
-              {activeRole === 'business' ? 'Total Invoiced Volume' : 'Total Billed Amount'}
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-              <FileText className="w-4 h-4" />
-            </div>
+    <div className="flex flex-col lg:flex-row gap-6">
+      {/* ======================================================== */}
+      {/* LEFT / CENTER MAIN COLUMN                                */}
+      {/* ======================================================== */}
+      <div className="flex-1 space-y-6">
+        {/* Top Header Row with Search */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-black text-[#1C1D22] tracking-tight">
+              Dashboard
+            </h1>
+            <p className="text-xs font-semibold mt-0.5" style={{ color: '#8E9297' }}>
+              Payments Updates
+            </p>
           </div>
-          <p className="font-mono text-xl md:text-2xl font-black text-white mt-3">
-            ₹{Number(metrics.totalInvoiced || 0).toLocaleString('en-IN')}
-          </p>
-          <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-semibold mt-2">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>Authoritative ledger verified</span>
+
+          {/* Search Pill Input matching reference */}
+          <div className="relative w-full sm:w-72">
+            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-3" />
+            <input
+              type="text"
+              placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white border rounded-2xl pl-10 pr-4 py-2.5 text-xs text-[#1C1D22] placeholder-slate-400 focus:outline-none focus:border-slate-400 shadow-xs"
+              style={{ borderColor: '#E8E4DC' }}
+            />
           </div>
         </div>
 
-        {/* KPI 2 */}
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800/80 hover:border-emerald-500/30 transition shadow-lg group">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">
-              {activeRole === 'business' ? 'Total Collected Revenue' : 'Total Paid Out'}
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="font-mono text-xl md:text-2xl font-black text-emerald-400 mt-3">
-            ₹{Number(metrics.totalCollected || metrics.totalPaid || 0).toLocaleString('en-IN')}
-          </p>
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-2">
-            <Clock className="w-3.5 h-3.5 text-teal-400" />
-            <span>{metrics.paidCount || 0} settlements finalized</span>
-          </div>
-        </div>
-
-        {/* KPI 3 */}
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800/80 hover:border-amber-500/30 transition shadow-lg group">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">
-              {activeRole === 'business' ? 'Pending Receivables' : 'Pending Payments'}
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
-              <Clock className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="font-mono text-xl md:text-2xl font-black text-amber-300 mt-3">
-            ₹{Number(metrics.totalPending || 0).toLocaleString('en-IN')}
-          </p>
-          <div className="flex items-center gap-1.5 text-[11px] text-amber-400/90 mt-2">
-            <span>{metrics.pendingCount || 0} invoices awaiting settlement</span>
-          </div>
-        </div>
-
-        {/* KPI 4 */}
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800/80 hover:border-rose-500/30 transition shadow-lg group">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">Overdue Amount</span>
-            <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center">
-              <AlertCircle className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="font-mono text-xl md:text-2xl font-black text-rose-400 mt-3">
-            ₹{Number(metrics.totalOverdue || 0).toLocaleString('en-IN')}
-          </p>
-          <div className="flex items-center gap-1.5 text-[11px] text-rose-400/90 mt-2">
-            <span>{metrics.overdueCount || 0} invoices past due date</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Analytics Chart & Recent Activity Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chart Column (2 spans) */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
+        {/* ======================================================== */}
+        {/* 3 PASTEL FEATURE CARDS (Sage, Gold, Indigo)             */}
+        {/* ======================================================== */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Card 1: Balance (Pastel Sage) */}
+          <div
+            className="rounded-3xl p-5 flex flex-col justify-between shadow-xs relative overflow-hidden h-44"
+            style={{ backgroundColor: '#CFDDC8', color: '#1A3018' }}
+          >
             <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-emerald-400" />
-                Monthly Cash Inflow & Collections
-              </h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">Authoritative monthly revenue trajectory</p>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold flex items-center gap-1.5 opacity-90">
+                  <span
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black"
+                    style={{ backgroundColor: '#B8CBB2', color: '#1A3018' }}
+                  >
+                    $
+                  </span>
+                  Balance
+                </span>
+                <span
+                  className="text-xs font-bold px-2 py-0.5 rounded-full"
+                  style={{ backgroundColor: '#B8CBB2', color: '#1A3018' }}
+                >
+                  + 17%
+                </span>
+              </div>
+              <p className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: '#1A3018' }}>
+                $ {totalBalance.toLocaleString('en-IN')}
+              </p>
+            </div>
+
+            {/* Sparkline wave */}
+            <svg className="w-full h-10 mt-auto" viewBox="0 0 200 40" fill="none">
+              <path
+                d="M0 30 Q 25 10, 50 25 T 100 20 T 150 35 T 200 15"
+                stroke="#6B8E62"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+
+          {/* Card 2: Sales (Pastel Honey Gold) */}
+          <div
+            className="rounded-3xl p-5 flex flex-col justify-between shadow-xs relative overflow-hidden h-44"
+            style={{ backgroundColor: '#F9DC90', color: '#3A2E12' }}
+          >
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold flex items-center gap-1.5 opacity-90">
+                  <span
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black"
+                    style={{ backgroundColor: '#ECCB6F', color: '#3A2E12' }}
+                  >
+                    %
+                  </span>
+                  Sales
+                </span>
+                <span
+                  className="text-xs font-bold px-2 py-0.5 rounded-full"
+                  style={{ backgroundColor: '#ECCB6F', color: '#3A2E12' }}
+                >
+                  + 23%
+                </span>
+              </div>
+              <p className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: '#3A2E12' }}>
+                $ {totalSales.toLocaleString('en-IN')}
+              </p>
+            </div>
+
+            {/* Sparkline wave */}
+            <svg className="w-full h-10 mt-auto" viewBox="0 0 200 40" fill="none">
+              <path
+                d="M0 25 Q 30 35, 60 15 T 120 30 T 160 10 T 200 22"
+                stroke="#C49B30"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+
+          {/* Card 3: Upgrade / AI (Pastel Periwinkle Indigo) */}
+          <div
+            className="rounded-3xl p-5 flex flex-col justify-between shadow-xs h-44"
+            style={{ backgroundColor: '#8E9EF8', color: '#FFFFFF' }}
+          >
+            <div>
+              <h3 className="text-sm font-black tracking-tight text-white">Upgrade</h3>
+              <p className="text-xs text-white/95 mt-1 leading-snug">
+                Get more information and opportunities
+              </p>
+            </div>
+
+            <button
+              onClick={() => navigate('/business/ai')}
+              className="w-full py-2 px-4 rounded-xl text-white text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5"
+              style={{ backgroundColor: '#5D6FE8' }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#4A5CD6')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#5D6FE8')}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Go Pro
+            </button>
+          </div>
+        </div>
+
+        {/* ======================================================== */}
+        {/* CAPSULE BAR CHART: "User in The Last Week"               */}
+        {/* ======================================================== */}
+        <div
+          className="rounded-3xl p-6 border shadow-xs"
+          style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E4DC' }}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <span className="text-xs font-semibold block" style={{ color: '#8E9297' }}>
+                User in The Last Week
+              </span>
+              <p className="text-2xl font-black text-[#1C1D22] tracking-tight mt-0.5">
+                + 3,2%
+              </p>
             </div>
             <button
-              onClick={() => navigate('/analytics')}
-              className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
+              className="text-xs font-semibold hover:underline"
+              style={{ color: '#8E9297' }}
             >
-              Full Intelligence <ArrowUpRight className="w-3.5 h-3.5" />
+              See statistics for all time
             </button>
           </div>
 
-          <div className="h-64 w-full pt-4">
-            {data?.monthlyCollections && data.monthlyCollections.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data.monthlyCollections}>
-                  <defs>
-                    <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#232b3e" vertical={false} />
-                  <XAxis dataKey="month" stroke="#64748b" fontSize={11} tickLine={false} />
-                  <YAxis
-                    stroke="#64748b"
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(v) => `₹${v >= 1000 ? `${v / 1000}k` : v}`}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area
-                    type="monotone"
-                    dataKey="amount"
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#revenueGrad)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-xs text-slate-500">
-                No monthly collection records yet.
-              </div>
-            )}
+          {/* Capsule Tracks Row */}
+          <div className="flex items-end justify-between gap-3 sm:gap-6 px-2 sm:px-6 pt-10 pb-2">
+            {weeklyCapsuleData.map((item, idx) => {
+              const isSelected = activeDayIndex === idx;
+
+              return (
+                <div
+                  key={item.day}
+                  onClick={() => setActiveDayIndex(idx)}
+                  className="flex flex-col items-center gap-3 cursor-pointer group flex-1 relative"
+                >
+                  {/* Floating Tooltip Pill on Active Item */}
+                  {isSelected && (
+                    <div className="absolute -top-10 flex flex-col items-center z-10 animate-in fade-in">
+                      <div
+                        className="px-2.5 py-1 rounded-full text-[11px] font-bold shadow-md whitespace-nowrap border"
+                        style={{
+                          backgroundColor: '#FFFFFF',
+                          borderColor: '#E8E4DC',
+                          color: '#1C1D22',
+                        }}
+                      >
+                        {item.filledAmount}
+                      </div>
+                      {/* Tooltip dot */}
+                      <div
+                        className="w-1.5 h-1.5 rounded-full mt-0.5 border"
+                        style={{ backgroundColor: '#1C1D22', borderColor: '#FFFFFF' }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Vertical Dotted Guide Line for selected bar */}
+                  {isSelected && (
+                    <div
+                      className="absolute -top-3 bottom-8 w-px border-l border-dashed pointer-events-none"
+                      style={{ borderColor: '#8E9297' }}
+                    />
+                  )}
+
+                  {/* The Capsule Pill Track */}
+                  <div
+                    className="w-full max-w-[46px] h-36 rounded-full flex flex-col justify-end p-1 transition-all"
+                    style={{ backgroundColor: '#ECE7DD' }}
+                  >
+                    {/* Filled Bar inside Track */}
+                    <div
+                      className="w-full rounded-full transition-all duration-300"
+                      style={{
+                        height: `${item.heightPct}%`,
+                        backgroundColor: '#1C1D22',
+                      }}
+                    />
+                  </div>
+
+                  {/* Day Label */}
+                  <span
+                    className="text-xs font-bold transition-colors"
+                    style={{
+                      color: isSelected ? '#1C1D22' : '#8E9297',
+                    }}
+                  >
+                    {item.day}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* AI Quick Prompts Card */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4 bg-gradient-to-br from-charcoal-900 via-charcoal-900 to-emerald-950/20">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-              <Bot className="w-4 h-4" />
-            </div>
+        {/* ======================================================== */}
+        {/* LAST ORDERS SECTION                                      */}
+        {/* ======================================================== */}
+        <div
+          className="rounded-3xl p-6 border shadow-xs"
+          style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E4DC' }}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
             <div>
-              <h3 className="text-sm font-bold text-white">BizPilot AI Operator</h3>
-              <p className="text-[11px] text-slate-400">1-Click Voice & Text Assistant</p>
+              <div className="flex items-center gap-3">
+                <h3 className="text-base font-black text-[#1C1D22] tracking-tight">
+                  Last Orders
+                </h3>
+                <span
+                  className="text-[10px] font-bold px-2.5 py-0.5 rounded-full"
+                  style={{ backgroundColor: '#FAF8F5', color: '#8E9297', border: '1px solid #E8E4DC' }}
+                >
+                  Data Updates Every 3 Hours
+                </span>
+              </div>
             </div>
+
+            <button
+              onClick={() => navigate('/business/invoices')}
+              className="text-xs font-bold hover:underline self-start sm:self-auto"
+              style={{ color: '#1C1D22' }}
+            >
+              View All Orders
+            </button>
           </div>
 
-          <p className="text-xs text-slate-300 leading-relaxed">
-            Issue invoices, analyze overdue receivables, or query month-to-date cashflow via English, Hindi, or Hinglish:
-          </p>
+          {/* Orders Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b" style={{ borderColor: '#F0ECE4' }}>
+                  <th className="pb-3 font-bold" style={{ color: '#8E9297' }}>Customer</th>
+                  <th className="pb-3 font-bold" style={{ color: '#8E9297' }}>Total</th>
+                  <th className="pb-3 font-bold" style={{ color: '#8E9297' }}>Status</th>
+                  <th className="pb-3 font-bold text-right" style={{ color: '#8E9297' }}>Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y" style={{ borderColor: '#F5F2EA' }}>
+                {recentOrders.map((order) => {
+                  const isChargeback = order.statusType === 'chargeback';
 
-          <div className="space-y-2">
-            {[
-              'Rahul ke liye 15000 ka invoice banao for website development',
-              'How much money did I collect this month?',
-              'Show my pending invoices',
-            ].map((prompt, idx) => (
-              <button
-                key={idx}
-                onClick={() => navigate('/ai')}
-                className="w-full text-left p-2.5 rounded-xl bg-charcoal-950/80 hover:bg-emerald-500/10 text-xs text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/30 transition flex items-center justify-between"
-              >
-                <span className="truncate pr-2">"{prompt}"</span>
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              </button>
-            ))}
+                  return (
+                    <tr key={order.id} className="hover:bg-[#FAF8F5] transition">
+                      <td className="py-3.5 flex items-center gap-3">
+                        <img
+                          src={order.avatar}
+                          alt={order.name}
+                          className="w-8 h-8 rounded-full object-cover shadow-xs"
+                        />
+                        <span className="font-bold text-[#1C1D22]">{order.name}</span>
+                      </td>
+
+                      <td className="py-3.5 font-bold text-[#1C1D22]">
+                        {order.amount}
+                      </td>
+
+                      <td className="py-3.5">
+                        <span
+                          className="px-3 py-1 rounded-full text-[11px] font-bold inline-block"
+                          style={{
+                            backgroundColor: isChargeback ? '#8E9EF8' : '#CFDDC8',
+                            color: isChargeback ? '#FFFFFF' : '#1A3018',
+                          }}
+                        >
+                          {order.status}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 text-right font-medium" style={{ color: '#8E9297' }}>
+                        {order.date}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-
-          <Button
-            variant="secondary"
-            size="sm"
-            className="w-full"
-            icon={Bot}
-            onClick={() => navigate('/ai')}
-          >
-            Launch Voice Assistant
-          </Button>
         </div>
       </div>
 
-      {/* Recent Invoices Table */}
-      <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden">
-        <div className="p-4 px-6 border-b border-slate-800 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <FileText className="w-4 h-4 text-emerald-400" />
-            Recent Invoicing Transactions
-          </h3>
-          <button
-            onClick={() => navigate('/invoices')}
-            className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
-          >
-            View All Invoices →
-          </button>
+      {/* ======================================================== */}
+      {/* RIGHT SIDEBAR (320px)                                    */}
+      {/* ======================================================== */}
+      <div className="w-full lg:w-80 space-y-6">
+        {/* Monthly Profits Card */}
+        <div
+          className="rounded-3xl p-6 border shadow-xs"
+          style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E4DC' }}
+        >
+          {/* Header */}
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h3 className="text-base font-black text-[#1C1D22] tracking-tight">
+                Monthly Profits
+              </h3>
+              <p className="text-xs font-semibold mt-0.5" style={{ color: '#8E9297' }}>
+                Total Profit Growth of 26%
+              </p>
+            </div>
+            <button
+              className="p-1.5 rounded-xl hover:bg-slate-50 transition"
+              style={{ color: '#8E9297' }}
+              title="Share"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Donut Chart with Centered Total */}
+          <div className="flex flex-col items-center justify-center my-4">
+            <div className="relative w-44 h-44 flex items-center justify-center">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                {/* Background Ring Track */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="38"
+                  fill="none"
+                  stroke="#FAF8F5"
+                  strokeWidth="10"
+                />
+
+                {/* Segment 1: Periwinkle / Indigo (60%) */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="38"
+                  fill="none"
+                  stroke="#8E9EF8"
+                  strokeWidth="10"
+                  strokeDasharray="143 238"
+                  strokeDashoffset="0"
+                  strokeLinecap="round"
+                />
+
+                {/* Segment 2: Honey Gold (24%) */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="38"
+                  fill="none"
+                  stroke="#F9DC90"
+                  strokeWidth="10"
+                  strokeDasharray="57 238"
+                  strokeDashoffset="-148"
+                  strokeLinecap="round"
+                />
+
+                {/* Segment 3: Pastel Sage (16%) */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="38"
+                  fill="none"
+                  stroke="#CFDDC8"
+                  strokeWidth="10"
+                  strokeDasharray="38 238"
+                  strokeDashoffset="-210"
+                  strokeLinecap="round"
+                />
+              </svg>
+
+              {/* Centered Total Text */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <span className="text-[10px] font-bold" style={{ color: '#8E9297' }}>
+                  Total
+                </span>
+                <span className="text-xl font-black text-[#1C1D22] tracking-tight">
+                  $ {profitTotal.toLocaleString('en-IN')}
+                </span>
+              </div>
+            </div>
+
+            {/* Legend Stats */}
+            <div className="w-full mt-6 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#8E9EF8' }} />
+                  <span className="font-semibold" style={{ color: '#8E9297' }}>Giveaway</span>
+                </div>
+                <span className="font-black text-[#1C1D22]">60%</span>
+              </div>
+
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#F9DC90' }} />
+                  <span className="font-semibold" style={{ color: '#8E9297' }}>Affiliate</span>
+                </div>
+                <span className="font-black text-[#1C1D22]">24%</span>
+              </div>
+
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#CFDDC8' }} />
+                  <span className="font-semibold" style={{ color: '#8E9297' }}>Offline Sales</span>
+                </div>
+                <span className="font-black text-[#1C1D22]">16%</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-charcoal-900/80 text-slate-400 border-b border-slate-800">
-              <tr>
-                <th className="py-3 px-4 font-semibold">Invoice #</th>
-                <th className="py-3 px-4 font-semibold">{activeRole === 'business' ? 'Client' : 'Issuer'}</th>
-                <th className="py-3 px-4 font-semibold">Issue Date</th>
-                <th className="py-3 px-4 font-semibold">Total Amount</th>
-                <th className="py-3 px-4 font-semibold">Balance Due</th>
-                <th className="py-3 px-4 font-semibold">Status</th>
-                <th className="py-3 px-4 font-semibold text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/50">
-              {(data?.recentInvoices || []).map((inv) => (
-                <tr
-                  key={inv.id}
-                  onClick={() => navigate(`/invoices/${inv.id}`)}
-                  className="hover:bg-charcoal-800/30 transition cursor-pointer"
-                >
-                  <td className="py-3.5 px-4 font-mono font-bold text-emerald-400">{inv.invoiceNumber}</td>
-                  <td className="py-3.5 px-4 font-medium text-slate-200">
-                    {activeRole === 'business' ? (inv.client?.name || 'Client') : (inv.workspace?.name || 'TechNova Solutions')}
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-400">
-                    {new Date(inv.issueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
-                  </td>
-                  <td className="py-3.5 px-4 font-mono font-semibold text-slate-100">
-                    ₹{Number(inv.totalAmount).toLocaleString('en-IN')}
-                  </td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-slate-100">
-                    {Number(inv.balanceDue) > 0 ? (
-                      <span className="text-amber-400">₹{Number(inv.balanceDue).toLocaleString('en-IN')}</span>
-                    ) : (
-                      <span className="text-emerald-400">₹0 (Paid)</span>
-                    )}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <Badge status={inv.status} />
-                  </td>
-                  <td className="py-3.5 px-4 text-right">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/invoices/${inv.id}`);
-                      }}
-                      className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
-                    >
-                      View →
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Recent Sales List */}
+        <div
+          className="rounded-3xl p-6 border shadow-xs"
+          style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E4DC' }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-black text-[#1C1D22] tracking-tight">
+              Recent Sales
+            </h3>
+            <button
+              onClick={() => navigate('/business/invoices')}
+              className="text-xs font-semibold hover:underline"
+              style={{ color: '#8E9297' }}
+            >
+              See All
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {recentSales.map((sale, idx) => (
+              <div key={idx} className="flex items-center justify-between py-1">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={sale.avatar}
+                    alt={sale.name}
+                    className="w-10 h-10 rounded-full object-cover shadow-xs"
+                  />
+                  <div>
+                    <p className="text-xs font-bold text-[#1C1D22] leading-tight">
+                      {sale.name}
+                    </p>
+                    <p className="text-[10px] font-medium leading-tight mt-0.5" style={{ color: '#8E9297' }}>
+                      {sale.time}
+                    </p>
+                  </div>
+                </div>
+
+                <span className="text-xs font-black text-[#1C1D22]">
+                  {sale.amount}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

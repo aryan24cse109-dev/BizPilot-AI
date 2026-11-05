@@ -1,195 +1,304 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useTheme } from '../context/ThemeContext.jsx';
 import { useNotifications } from '../context/NotificationContext.jsx';
 import { NotificationDrawer } from '../components/notifications/NotificationDrawer.jsx';
 import {
-  Home,
+  LayoutDashboard,
   FileText,
   CreditCard,
   MessageSquare,
   User,
   ArrowLeftRight,
-  Sun,
-  Moon,
   Bell,
   LogOut,
   ShieldCheck,
-  CheckCircle,
-  Building
+  Building2,
+  ChevronDown
 } from 'lucide-react';
 
 export const ClientLayout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, toggleRole, logout } = useAuth();
-  const { isDark, toggleTheme } = useTheme();
   const { unreadCount } = useNotifications();
 
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotificationDrawer, setShowNotificationDrawer] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const clientNavItems = [
-    { name: 'Client Home', path: '/portal', icon: Home, end: true },
-    { name: 'My Invoices', path: '/portal/invoices', icon: FileText, end: false },
-    { name: 'Payment History', path: '/portal/history', icon: CreditCard, end: false },
-    { name: 'Messages', path: '/portal/messages', icon: MessageSquare, end: false },
+    { name: 'Overview', path: '/portal', icon: LayoutDashboard, exact: true },
+    { name: 'My Invoices', path: '/portal/invoices', icon: FileText },
+    { name: 'Payment History', path: '/portal/history', icon: CreditCard },
+    { name: 'Messages', path: '/portal/messages', icon: MessageSquare, badge: '2' },
+    { name: 'Account Profile', path: '/portal/profile', icon: User },
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-canvas-light dark:bg-canvas-dark text-slate-900 dark:text-slate-100 transition-colors duration-200">
-      {/* Client Portal Header */}
-      <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-surface-light/95 dark:bg-surface-dark/95 backdrop-blur-md sticky top-0 z-30 px-4 sm:px-8 flex items-center justify-between">
-        {/* Brand & Client Portal Indicator */}
-        <div className="flex items-center gap-6">
-          <div
-            onClick={() => navigate('/portal')}
-            className="flex items-center gap-2.5 cursor-pointer select-none"
-          >
-            <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-400 border border-teal-500/30 flex items-center justify-center font-bold text-xs">
-              <ShieldCheck className="w-4 h-4 text-emerald-primary" />
+    <div className="min-h-screen w-full flex bg-[#F7F5F0] text-[#1C1D22] font-sans antialiased">
+      {/* ======================================================== */}
+      {/* 1. PROFESSIONAL FULL-HEIGHT LEFT SIDEBAR (Solid #1C1D22) */}
+      {/* ======================================================== */}
+      <aside
+        className="w-64 h-screen sticky top-0 shrink-0 select-none flex flex-col justify-between p-5 z-30 border-r"
+        style={{ backgroundColor: '#1C1D22', borderColor: '#2B2C33', color: '#FFFFFF' }}
+      >
+        <div className="flex flex-col flex-1 min-h-0">
+          {/* Top Brand Logo */}
+          <div className="flex items-center gap-3 px-2 py-2 mb-6">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md shrink-0"
+              style={{ backgroundColor: '#2C2D35', border: '1px solid rgba(255, 255, 255, 0.12)' }}
+            >
+              <ShieldCheck className="w-5 h-5 text-[#CFDDC8]" />
             </div>
-            <div>
-              <h1 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
-                BizPilot <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-primary font-bold border border-emerald-500/20">Client Portal</span>
+            <div className="min-w-0">
+              <h1 className="text-lg font-black tracking-tight text-white leading-tight truncate">
+                BizPilot <span style={{ color: '#CFDDC8' }}>Portal</span>
               </h1>
+              <p className="text-[11px] font-medium leading-tight" style={{ color: '#8E9297' }}>
+                Client Collaboration
+              </p>
             </div>
           </div>
 
-          {/* Navigation Links (Desktop) */}
-          <nav className="hidden md:flex items-center gap-1">
-            {clientNavItems.map((item) => (
-              <NavLink
-                key={item.name}
-                to={item.path}
-                end={item.end}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                    isActive
-                      ? 'bg-emerald-primary/10 text-emerald-primary dark:text-emerald-400 border border-emerald-primary/30'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-charcoal-800'
-                  }`
+          {/* Profile Card in Sidebar */}
+          <div
+            className="rounded-2xl p-4 mb-6 flex flex-col items-center text-center relative border"
+            style={{
+              backgroundColor: '#25262C',
+              borderColor: 'rgba(255, 255, 255, 0.08)',
+            }}
+          >
+            <div className="relative mb-2">
+              <img
+                src={
+                  user?.avatar ||
+                  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=160&q=80'
                 }
-              >
-                <item.icon className="w-3.5 h-3.5" />
-                {item.name}
-              </NavLink>
-            ))}
+                alt="Avatar"
+                className="w-14 h-14 rounded-full object-cover shadow-inner"
+                style={{ border: '2px solid rgba(255, 255, 255, 0.25)' }}
+              />
+              <span
+                className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-[#1C1D22]"
+                style={{ backgroundColor: '#10B981' }}
+                title="Online"
+              />
+            </div>
+            <span className="text-[11px] font-medium block" style={{ color: '#8E9297' }}>
+              Welcome Back,
+            </span>
+            <p className="text-sm font-bold text-white mt-0.5 tracking-tight truncate max-w-[180px]">
+              {user?.name || 'Valued Client'}
+            </p>
+            <span
+              className="text-[10px] font-semibold mt-1 px-2.5 py-0.5 rounded-full"
+              style={{ backgroundColor: 'rgba(207, 221, 200, 0.15)', color: '#CFDDC8' }}
+            >
+              Client Account
+            </span>
+          </div>
+
+          {/* Navigation Items */}
+          <nav className="space-y-1 overflow-y-auto flex-1 pr-1 custom-scroll">
+            {clientNavItems.map((item) => {
+              const isActive = item.exact
+                ? location.pathname === item.path
+                : location.pathname.startsWith(item.path);
+
+              return (
+                <NavLink
+                  key={item.name}
+                  to={item.path}
+                  className="relative flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150"
+                  style={{
+                    color: isActive ? '#F5C869' : '#8E9297',
+                    backgroundColor: isActive ? 'rgba(245, 200, 105, 0.1)' : 'transparent',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) e.currentTarget.style.color = '#FFFFFF';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) e.currentTarget.style.color = '#8E9297';
+                  }}
+                >
+                  {/* Left Accent Bar */}
+                  {isActive && (
+                    <span
+                      className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full"
+                      style={{ backgroundColor: '#F5C869' }}
+                    />
+                  )}
+
+                  <div className="flex items-center gap-3">
+                    <item.icon
+                      className="w-4 h-4 shrink-0 transition-colors"
+                      style={{ color: isActive ? '#F5C869' : '#8E9297' }}
+                    />
+                    <span>{item.name}</span>
+                  </div>
+
+                  {item.badge && (
+                    <span
+                      className="text-[10px] text-white font-bold px-2 py-0.5 rounded-full shadow-xs"
+                      style={{ backgroundColor: '#6375F0' }}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </NavLink>
+              );
+            })}
           </nav>
         </div>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-3">
-          {/* Switch to Business Workspace (Role Toggle) */}
+        {/* Bottom Sidebar Action: Switch to Business & Logout */}
+        <div
+          className="pt-4 mt-4 border-t space-y-1.5"
+          style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
+        >
           <button
             onClick={() => {
               toggleRole();
               navigate('/business');
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-charcoal-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:border-emerald-primary/50 transition shadow-xs"
-            title="Switch back to Business Owner perspective"
+            className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold transition"
+            style={{ color: '#8E9297', backgroundColor: 'rgba(255, 255, 255, 0.04)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#8E9297')}
           >
-            <ArrowLeftRight className="w-3.5 h-3.5 text-emerald-primary" />
-            <span className="hidden sm:inline">Business Workspace</span>
+            <div className="flex items-center gap-2.5">
+              <ArrowLeftRight className="w-3.5 h-3.5 text-[#F5C869]" />
+              <span>Business Workspace</span>
+            </div>
+            <span className="text-[10px] uppercase font-bold text-slate-500">Switch</span>
           </button>
 
-          {/* Theme Toggle */}
           <button
-            onClick={toggleTheme}
-            className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-charcoal-800 transition"
-            title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            onClick={logout}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition"
+            style={{ color: '#8E9297' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#EF4444')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#8E9297')}
           >
-            {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Sign Out</span>
           </button>
+        </div>
+      </aside>
 
-          {/* Notification Bell */}
-          <button
-            onClick={() => setShowNotificationDrawer(true)}
-            className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-charcoal-800 transition relative"
-            title="Notifications"
-          >
-            <Bell className="w-4 h-4" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-primary" />
-            )}
-          </button>
-
-          {/* User Account / Profile Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-charcoal-800 transition"
+      {/* ======================================================== */}
+      {/* 2. MAIN APPLICATION CONTENT AREA                         */}
+      {/* ======================================================== */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen bg-[#F7F5F0]">
+        {/* Top Navbar */}
+        <header
+          className="h-16 px-6 lg:px-8 border-b flex items-center justify-between sticky top-0 z-20"
+          style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E4DC' }}
+        >
+          {/* Left Context Info */}
+          <div className="flex items-center gap-2.5">
+            <span
+              className="px-2.5 py-1 rounded-xl text-xs font-bold border flex items-center gap-1.5"
+              style={{ backgroundColor: '#FAF8F5', borderColor: '#E8E4DC', color: '#1C1D22' }}
             >
-              <div className="w-8 h-8 rounded-full bg-teal-500/20 text-teal-400 border border-teal-500/30 flex items-center justify-center font-bold text-xs">
-                {user?.name ? user.name.slice(0, 2).toUpperCase() : 'CL'}
-              </div>
-              <div className="hidden md:block text-left">
-                <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
-                  {user?.name || 'Client User'}
-                </p>
-                <p className="text-[10px] text-slate-400">Verified Client</p>
-              </div>
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Verified Client Portal</span>
+            </span>
+            <span className="text-xs font-medium hidden sm:inline" style={{ color: '#8E9297' }}>
+              Secure Payment & Collaboration Hub
+            </span>
+          </div>
+
+          {/* Right Header Actions */}
+          <div className="flex items-center gap-3">
+            {/* Switch to Business Workspace */}
+            <button
+              onClick={() => {
+                toggleRole();
+                navigate('/business');
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold hover:border-slate-400 transition shadow-xs"
+              style={{ borderColor: '#E8E4DC', color: '#1C1D22', backgroundColor: '#FFFFFF' }}
+            >
+              <ArrowLeftRight className="w-3.5 h-3.5 text-[#F5C869]" />
+              <span className="hidden sm:inline">Switch to Business</span>
+              <span className="sm:hidden">Business</span>
             </button>
 
-            {showUserMenu && (
-              <div
-                className="absolute right-0 mt-2 w-52 bg-surface-light dark:bg-charcoal-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-2 z-50 animate-in fade-in"
-                onMouseLeave={() => setShowUserMenu(false)}
+            {/* Notification Bell */}
+            <button
+              onClick={() => setShowNotificationDrawer(true)}
+              className="p-2 rounded-xl border hover:bg-slate-50 transition relative"
+              style={{ borderColor: '#E8E4DC', color: '#1C1D22' }}
+              title="Notifications"
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span
+                  className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full"
+                  style={{ backgroundColor: '#F5C869' }}
+                />
+              )}
+            </button>
+
+            {/* User Mini Avatar Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-2 p-1 rounded-xl border hover:border-slate-300 transition"
+                style={{ borderColor: '#E8E4DC' }}
               >
-                <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 text-xs">
-                  <p className="font-semibold text-slate-900 dark:text-white">{user?.name}</p>
-                  <p className="text-slate-500 dark:text-slate-400 truncate text-[11px]">{user?.email}</p>
-                </div>
-                <div className="py-1">
+                <img
+                  src={
+                    user?.avatar ||
+                    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80'
+                  }
+                  alt="Avatar"
+                  className="w-7 h-7 rounded-lg object-cover"
+                />
+                <span className="text-xs font-bold text-[#1C1D22] pr-1 hidden md:inline">
+                  {user?.name?.split(' ')[0] || 'Client'}
+                </span>
+              </button>
+
+              {showUserMenu && (
+                <div
+                  className="absolute right-0 mt-2 w-52 bg-white border rounded-2xl shadow-xl p-2 z-50 animate-in fade-in"
+                  style={{ borderColor: '#E8E4DC' }}
+                  onMouseLeave={() => setShowUserMenu(false)}
+                >
+                  <div className="px-3 py-2 border-b border-slate-100 text-xs">
+                    <p className="font-bold text-slate-900">{user?.name}</p>
+                    <p className="text-slate-400 truncate text-[11px]">{user?.email}</p>
+                  </div>
                   <button
                     onClick={() => {
                       navigate('/portal/profile');
                       setShowUserMenu(false);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-charcoal-800 transition text-left"
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs hover:bg-slate-50 font-medium text-slate-700 mt-1"
                   >
-                    <User className="w-4 h-4" />
-                    Profile & Settings
+                    Client Profile
                   </button>
                   <button
                     onClick={logout}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-rose-500 hover:bg-rose-500/10 transition text-left"
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs hover:bg-rose-50 font-medium text-rose-600"
                   >
-                    <LogOut className="w-4 h-4" />
                     Sign Out
                   </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Mobile Navigation Strip */}
-      <nav className="md:hidden flex items-center justify-around border-b border-slate-200 dark:border-slate-800 bg-surface-light dark:bg-surface-dark px-2 py-2">
-        {clientNavItems.map((item) => (
-          <NavLink
-            key={item.name}
-            to={item.path}
-            end={item.end}
-            className={({ isActive }) =>
-              `flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-semibold transition ${
-                isActive
-                  ? 'text-emerald-primary'
-                  : 'text-slate-500 dark:text-slate-400'
-              }`
-            }
-          >
-            <item.icon className="w-4 h-4" />
-            <span>{item.name}</span>
-          </NavLink>
-        ))}
-      </nav>
-
-      {/* Main Content Area */}
-      <main className="flex-1 p-4 sm:p-8 max-w-5xl w-full mx-auto">
-        <Outlet />
-      </main>
+        {/* Main Content Area */}
+        <main className="flex-1 p-6 lg:p-8 max-w-[1600px] w-full mx-auto overflow-y-auto">
+          <Outlet />
+        </main>
+      </div>
 
       {/* Notifications Drawer */}
       <NotificationDrawer
