@@ -17,3 +17,14 @@ export const workflowSchema = z.object({
   confirmed: z.boolean().default(false),
   idempotencyKey: z.string().trim().min(8).max(150).optional(),
 });
+
+export const assistantMessageSchema = z.object({
+  message: z.string().trim().min(1).max(4000),
+  conversationHistory: z.array(
+    z.object({
+      role: z.enum(["user", "assistant"]),
+      content: z.string().trim().min(1).max(4000),
+    }).strict(),
+  ).max(10).default([]),
+  confirmed: z.boolean().default(false),
+}).strict();

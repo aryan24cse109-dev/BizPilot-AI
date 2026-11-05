@@ -12,29 +12,28 @@ import {
 
 import assistantRoutes from './modules/assistant/assistant.routes.js';
 
-const app = express();
+export const createApp = ({ assistantRouter = assistantRoutes } = {}) => {
+  const app = express();
 
-app.disable('x-powered-by');
+  app.disable('x-powered-by');
 
-app.use(helmet());
+  app.use(helmet());
 
-app.use(requestIdMiddleware);
+  app.use(requestIdMiddleware);
 
-app.use(
-  express.json({
-    limit: '1mb'
-  })
-);
+  app.use(
+    express.json({
+      limit: '1mb'
+    })
+  );
 
-app.use('/api/assistant', assistantRoutes);
-app.use('/api/health', healthRoutes);
+  app.use('/api/assistant', assistantRouter);
+  app.use('/api/health', healthRoutes);
 
-// Other protected API routes will be mounted in later stages.
+  app.use(notFoundMiddleware);
+  app.use(errorMiddleware);
 
-// Handle unknown routes.
-app.use(notFoundMiddleware);
+  return app;
+};
 
-// Must be registered after routes and the 404 handler.
-app.use(errorMiddleware);
-
-export default app;
+export default createApp();

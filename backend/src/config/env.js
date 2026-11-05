@@ -25,6 +25,11 @@ const envSchema = z.object({
 
   AI_SERVICE_URL: z.string().url().default("http://localhost:6000"),
 
+  INTERNAL_SERVICE_SECRET: z
+    .string()
+    .min(32, "INTERNAL_SERVICE_SECRET must contain at least 32 characters")
+    .optional(),
+
   GOOGLE_CLIENT_ID: z.string().default(""),
 
   JWT_SECRET: z.string().min(32, "JWT_SECRET must contain at least 32 characters"),
@@ -53,6 +58,12 @@ if (!result.success) {
     console.error(`- ${issue.path.join(".")}: ${issue.message}`);
   }
 
+  process.exit(1);
+}
+
+if (result.data.NODE_ENV === "production" && !result.data.INTERNAL_SERVICE_SECRET) {
+  console.error("Invalid environment configuration:");
+  console.error("- INTERNAL_SERVICE_SECRET: required in production");
   process.exit(1);
 }
 

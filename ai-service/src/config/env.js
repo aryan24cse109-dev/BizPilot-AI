@@ -21,6 +21,16 @@ const optionalSecret = z.preprocess(
   z.string().min(1).optional()
 );
 
+const timeoutFromSupportedNames = z.preprocess(
+  (value) => value ?? process.env.AI_REQUEST_TIMEOUT,
+  z.coerce
+    .number()
+    .int()
+    .min(1000)
+    .max(120000)
+    .default(30000)
+);
+
 const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
@@ -56,12 +66,7 @@ const envSchema = z.object({
 
   AI_SERVICE_SECRET: optionalSecret,
 
-  AI_REQUEST_TIMEOUT_MS: z.coerce
-    .number()
-    .int()
-    .min(1000)
-    .max(120000)
-    .default(30000),
+  AI_REQUEST_TIMEOUT_MS: timeoutFromSupportedNames,
 
   AI_MAX_RETRIES: z.coerce
     .number()

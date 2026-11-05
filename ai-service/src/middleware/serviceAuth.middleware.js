@@ -4,10 +4,9 @@ import { env } from '../config/env.js';
 import { ApiError } from '../utils/ApiError.js';
 import { HTTP_STATUS, ERROR_CODES } from '../utils/constants.js';
 
-export const serviceAuthMiddleware = (req, res, next) => {
+export const createServiceAuthMiddleware = (expectedSecret = env.AI_SERVICE_SECRET) =>
+  (req, res, next) => {
   try {
-    const expectedSecret = env.AI_SERVICE_SECRET;
-
     if (!expectedSecret) {
       throw new ApiError({
         statusCode: HTTP_STATUS.SERVICE_UNAVAILABLE,
@@ -47,4 +46,6 @@ export const serviceAuthMiddleware = (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+  };
+
+export const serviceAuthMiddleware = createServiceAuthMiddleware();

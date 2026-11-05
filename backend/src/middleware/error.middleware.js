@@ -29,6 +29,10 @@ export function errorHandler(error, req, res, next) {
     message,
   };
 
+  if (error.code) {
+    response.code = error.code;
+  }
+
   if (error.details && statusCode < 500) {
     response.details = error.details;
   }
