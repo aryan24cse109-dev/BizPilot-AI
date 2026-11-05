@@ -70,11 +70,11 @@ export async function getDashboard(user, filters = {}) {
   const ownerWhere = effectiveRole === "BUSINESS"
     ? { businessUserId: user.id }
     : {
-        OR: [
-          { clientUserId: user.id },
-          { clientEmail: user.email.toLowerCase().trim() },
-        ],
-      };
+      OR: [
+        { clientUserId: user.id },
+        { clientEmail: user.email.toLowerCase().trim() },
+      ],
+    };
 
   const invoiceWhere = {
     ...ownerWhere,

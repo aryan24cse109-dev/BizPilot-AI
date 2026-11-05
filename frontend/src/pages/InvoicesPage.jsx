@@ -26,7 +26,8 @@ import {
   CreditCard,
   Copy,
   Layers,
-  Sparkles
+  Sparkles,
+  Users
 } from 'lucide-react';
 
 export const InvoicesPage = () => {

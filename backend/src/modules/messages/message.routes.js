@@ -12,3 +12,4 @@ router.get("/:id", MessageController.getMessages);
 router.post("/:id", MessageController.sendMessage);
 
 export default router;
+

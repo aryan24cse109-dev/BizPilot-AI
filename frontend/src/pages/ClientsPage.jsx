@@ -273,11 +273,10 @@ export const ClientsPage = () => {
                     </td>
                     <td className="py-3.5 px-4">
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                          c.isRegistered
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${c.isRegistered
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : 'bg-amber-50 text-amber-700 border-amber-200'
-                        }`}
+                          }`}
                       >
                         {c.isRegistered ? 'REGISTERED' : 'AUTO-INVITED'}
                       </span>

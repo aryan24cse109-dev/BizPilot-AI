@@ -69,7 +69,7 @@ export async function linkInvoicesAndConnectionsToUser(user) {
             status: "ACTIVE",
             acceptedAt: new Date(),
           },
-        }).catch(() => {});
+        }).catch(() => { });
       }
     }
 
@@ -83,7 +83,7 @@ export async function linkInvoicesAndConnectionsToUser(user) {
           userId: user.id,
           country: "India",
         },
-      }).catch(() => {});
+      }).catch(() => { });
     }
   } catch (err) {
     console.warn("Auto-linking warning:", err.message);
@@ -224,7 +224,7 @@ export async function getAuthenticatedUser(userId) {
   });
 
   if (user) {
-    linkInvoicesAndConnectionsToUser(user).catch(() => {});
+    linkInvoicesAndConnectionsToUser(user).catch(() => { });
   }
 
   return user;
