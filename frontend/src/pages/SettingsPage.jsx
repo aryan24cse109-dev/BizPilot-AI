@@ -19,14 +19,14 @@ export const SettingsPage = () => {
   const { user, activeWorkspace } = useAuth();
   const toast = useToast();
   const [profileData, setProfileData] = useState({
-    businessName: activeWorkspace?.name || '',
-    businessType: 'Agency',
-    taxId: '29ABCDE1234F1Z5',
-    addressLine1: 'Tech Park, Indiranagar',
-    city: 'Bengaluru',
-    state: 'Karnataka',
-    country: 'India',
-    paymentInstructions: 'UPI ID: technova@upi or Netbanking: HDFC0001234 A/C 987654321',
+    businessName: user?.businessProfile?.businessName || activeWorkspace?.name || '',
+    businessType: user?.businessProfile?.businessType || 'STARTUP',
+    taxId: user?.businessProfile?.gstin || user?.businessProfile?.taxId || '',
+    addressLine1: user?.businessProfile?.addressLine1 || '',
+    city: user?.businessProfile?.city || '',
+    state: user?.businessProfile?.state || '',
+    country: user?.businessProfile?.country || 'India',
+    paymentInstructions: '',
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);

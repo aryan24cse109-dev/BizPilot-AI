@@ -32,7 +32,7 @@ export const RegisterPage = () => {
     setError('');
     try {
       const user = await register(formData);
-      toast.success('Account Created', `Welcome to BizPilot AI, ${user.name}!`);
+      toast.success('Account Created', `Welcome to Wealthra™, ${user.name}!`);
       navigate('/onboarding');
     } catch (err) {
       setError(err.message || 'Registration failed');
@@ -65,7 +65,7 @@ export const RegisterPage = () => {
             icon={User}
             value={formData.name}
             onChange={handleChange}
-            placeholder="Rajesh Kumar"
+            placeholder="Full Name"
             required
           />
           <Input
@@ -73,7 +73,7 @@ export const RegisterPage = () => {
             name="username"
             value={formData.username}
             onChange={handleChange}
-            placeholder="rajesh_tech"
+            placeholder="username"
             required
           />
         </div>
@@ -85,7 +85,7 @@ export const RegisterPage = () => {
           icon={Mail}
           value={formData.email}
           onChange={handleChange}
-          placeholder="rajesh@technova.com"
+          placeholder="name@company.com"
           required
         />
 
@@ -96,7 +96,7 @@ export const RegisterPage = () => {
             icon={Building}
             value={formData.workspaceName}
             onChange={handleChange}
-            placeholder="TechNova Solutions"
+            placeholder="Business Name"
             required
           />
           <div className="space-y-1.5">

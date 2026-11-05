@@ -155,7 +155,9 @@ export const PaymentsPage = () => {
                       {p.invoice?.invoiceNumber}
                     </td>
                     <td className="py-3.5 px-4 font-bold text-[#1C1D22]">
-                      {activeRole === 'business' ? (p.invoice?.clientName || p.client?.name || 'Client') : (p.workspace?.name || 'TechNova Solutions')}
+                      {activeRole === 'business'
+                        ? (p.invoice?.clientName || p.clientUser?.fullName || 'Client')
+                        : (p.businessUser?.businessProfile?.businessName || p.businessUser?.fullName || 'Merchant Workspace')}
                     </td>
                     <td className="py-3.5 px-4">
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-[#FAF8F5] border border-[#E8E4DC] text-[#1C1D22]">

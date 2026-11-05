@@ -44,21 +44,15 @@ export const ClientLayout = () => {
       >
         <div className="flex flex-col flex-1 min-h-0">
           {/* Top Brand Logo */}
-          <div className="flex items-center gap-3 px-2 py-2 mb-6">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md shrink-0"
-              style={{ backgroundColor: '#2C2D35', border: '1px solid rgba(255, 255, 255, 0.12)' }}
-            >
-              <ShieldCheck className="w-5 h-5 text-[#CFDDC8]" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-lg font-black tracking-tight text-white leading-tight truncate">
-                BizPilot <span style={{ color: '#CFDDC8' }}>Portal</span>
-              </h1>
-              <p className="text-[11px] font-medium leading-tight" style={{ color: '#8E9297' }}>
-                Client Collaboration
-              </p>
-            </div>
+          <div className="px-2 py-2 mb-6">
+            <img
+              src="/wealthra-logo.png"
+              alt="Wealthra"
+              className="h-8 w-auto max-w-[170px] object-contain mb-1.5"
+            />
+            <p className="text-[11px] font-medium leading-tight" style={{ color: '#8E9297' }}>
+              Client Collaboration
+            </p>
           </div>
 
           {/* Navigation Items */}

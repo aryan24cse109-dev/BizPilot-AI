@@ -150,7 +150,7 @@ export const ClientInvoicesPage = () => {
                       {inv.invoiceNumber}
                     </td>
                     <td className="py-3.5 px-4 font-bold text-[#1C1D22]">
-                      {inv.workspace?.name || 'TechNova Solutions'}
+                      {inv.businessUser?.businessProfile?.businessName || inv.businessUser?.fullName || 'Issuing Business'}
                     </td>
                     <td className="py-3.5 px-4 font-medium text-[#8E9297]">
                       {new Date(inv.issueDate).toLocaleDateString('en-IN', {

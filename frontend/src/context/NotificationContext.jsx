@@ -1,80 +1,83 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { notificationsApi } from '../api/notifications.api.js';
 
 const NotificationContext = createContext(null);
 
-const DEFAULT_NOTIFICATIONS = [
-  {
-    id: 'notif_1',
-    type: 'INVOICE_RECEIVED',
-    title: 'New Tax Invoice Received',
-    message: 'TechNova Solutions has issued invoice INV-2026-001 for ₹15,000.',
-    date: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    isRead: false,
-    link: '/portal/invoices',
-  },
-  {
-    id: 'notif_2',
-    type: 'PAYMENT_CONFIRMED',
-    title: 'Payment Settlement Verified',
-    message: 'Your payment of ₹25,000 via UPI was successfully verified and recorded.',
-    date: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-    isRead: false,
-    link: '/portal/history',
-  },
-  {
-    id: 'notif_3',
-    type: 'MESSAGE_RECEIVED',
-    title: 'New Message from Rajesh Kumar',
-    message: '"Please review the updated scope document for the cloud migration retainer."',
-    date: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    isRead: true,
-    link: '/portal/messages',
-  },
-  {
-    id: 'notif_4',
-    type: 'INVOICE_DUE_SOON',
-    title: 'Invoice Due in 3 Days',
-    message: 'Invoice INV-2026-004 is due on 14 Nov 2026.',
-    date: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-    isRead: true,
-    link: '/portal/invoices',
-  },
-];
-
 export const NotificationProvider = ({ children }) => {
-  const [notifications, setNotifications] = useState(() => {
-    const saved = localStorage.getItem('bizpilot_notifications');
-    return saved ? JSON.parse(saved) : DEFAULT_NOTIFICATIONS;
-  });
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
 
+  // Fetch from authoritative backend
+  const fetchNotifications = useCallback(async () => {
+    const token = localStorage.getItem('bizpilot_token');
+    if (!token) return;
+
+    try {
+      setLoading(true);
+      const res = await notificationsApi.listNotifications();
+      if (res?.data?.notifications) {
+        setNotifications(res.data.notifications);
+        setUnreadCount(res.data.unreadCount ?? res.data.notifications.filter((n) => !n.isRead).length);
+      }
+    } catch {
+      // In case session is not authenticated yet or backend warming up
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Poll notifications every 30 seconds
   useEffect(() => {
-    localStorage.setItem('bizpilot_notifications', JSON.stringify(notifications));
-  }, [notifications]);
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-
-  const markAsRead = (id) => {
+  const markAsRead = async (id) => {
+    // Optimistic update
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+
+    try {
+      await notificationsApi.markAsRead(id);
+    } catch (err) {
+      console.warn('Failed to sync notification read state:', err.message);
+    }
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    // Optimistic update
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    setUnreadCount(0);
+
+    try {
+      await notificationsApi.markAllAsRead();
+    } catch (err) {
+      console.warn('Failed to mark all as read:', err.message);
+    }
   };
 
-  const clearNotification = (id) => {
+  const clearNotification = async (id) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+    try {
+      await notificationsApi.deleteNotification(id);
+    } catch (err) {
+      console.warn('Failed to delete notification:', err.message);
+    }
   };
 
   const addNotification = (notif) => {
     const newNotif = {
-      id: `notif_${Date.now()}`,
-      date: new Date().toISOString(),
+      id: notif.id || `notif_${Date.now()}`,
+      date: notif.date || new Date().toISOString(),
       isRead: false,
       ...notif,
     };
     setNotifications((prev) => [newNotif, ...prev]);
+    setUnreadCount((prev) => prev + 1);
   };
 
   return (
@@ -82,6 +85,8 @@ export const NotificationProvider = ({ children }) => {
       value={{
         notifications,
         unreadCount,
+        loading,
+        fetchNotifications,
         markAsRead,
         markAllAsRead,
         clearNotification,

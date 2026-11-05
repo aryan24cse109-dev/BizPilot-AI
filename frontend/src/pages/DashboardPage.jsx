@@ -7,121 +7,93 @@ import {
   ArrowUpRight,
   Sparkles,
   Share2,
-  DollarSign,
+  FileText,
+  CreditCard,
   Percent,
   CheckCircle2,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Plus
 } from 'lucide-react';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
-  const { activeWorkspace } = useAuth();
+  const { user, activeWorkspace } = useAuth();
   const [data, setData] = useState(null);
+  const [invoices, setInvoices] = useState([]);
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeDayIndex, setActiveDayIndex] = useState(2); // Wednesday default active
+  const [activeDayIndex, setActiveDayIndex] = useState(new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
 
   useEffect(() => {
-    const fetchDashboard = async () => {
+    const fetchAllDashboardData = async () => {
       setLoading(true);
       try {
-        const res = await dashboardApi.getBusinessDashboard();
-        if (res.success) setData(res.data);
+        const [dashRes, invRes, txRes] = await Promise.all([
+          dashboardApi.getDashboard({ role: 'business' }).catch(() => null),
+          dashboardApi.getDashboardInvoices({ limit: 10, role: 'business' }).catch(() => null),
+          dashboardApi.getDashboardTransactions({ limit: 10, role: 'business' }).catch(() => null),
+        ]);
+
+        if (dashRes?.success) setData(dashRes.data);
+        if (invRes?.success && Array.isArray(invRes.data?.invoices)) setInvoices(invRes.data.invoices);
+        if (txRes?.success && Array.isArray(txRes.data?.payments)) setTransactions(txRes.data.payments);
       } catch (err) {
-        console.error('Failed to load dashboard:', err);
+        console.error('Failed to load live dashboard from database:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchDashboard();
+
+    fetchAllDashboardData();
   }, [activeWorkspace?.id]);
 
-  const metrics = data?.metrics || {};
+  const financial = data?.metrics?.financial || {};
+  const invoiceCounts = data?.metrics?.invoices || {};
+  const paymentMetrics = data?.metrics?.payments || {};
 
-  // Formatted figures matching reference design
-  const totalBalance = metrics.totalCollected ? Number(metrics.totalCollected) : 56874;
-  const totalSales = metrics.totalInvoiced ? Number(metrics.totalInvoiced) : 24575;
-  const profitTotal = 76356;
+  // Database-backed figures - NO hardcoded fallbacks
+  const totalBalance = Number(financial.totalCapturedAmount || 0);
+  const totalInvoiced = Number(financial.totalInvoicedAmount || 0);
+  const totalOutstanding = Number(financial.totalOutstandingAmount || 0);
 
-  // Capsule Chart Data (Mon - Sun matching reference design)
-  const weeklyCapsuleData = [
-    { day: 'Mon', heightPct: 35, filledAmount: '$12,000' },
-    { day: 'Tue', heightPct: 75, filledAmount: '$32,000' },
-    { day: 'Wed', heightPct: 82, filledAmount: '$33,567', active: true },
-    { day: 'Thu', heightPct: 45, filledAmount: '$18,000' },
-    { day: 'Fri', heightPct: 26, filledAmount: '$10,500' },
-    { day: 'Sat', heightPct: 88, filledAmount: '$36,000' },
-    { day: 'Sun', heightPct: 60, filledAmount: '$24,000' },
-  ];
+  // Compute 7-day volume dynamically from real database invoices
+  const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const dayVolumes = [0, 0, 0, 0, 0, 0, 0];
 
-  // Last Orders list matching reference design
-  const recentOrders = [
-    {
-      id: 'ord_1',
-      name: 'David Astee',
-      amount: '$1,456',
-      status: 'Chargeback',
-      statusType: 'chargeback',
-      date: '11 Sep 2026',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80',
-    },
-    {
-      id: 'ord_2',
-      name: 'Maria Hulama',
-      amount: '$42,4378',
-      status: 'Completed',
-      statusType: 'completed',
-      date: '11 Sep 2026',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80',
-    },
-    {
-      id: 'ord_3',
-      name: 'Arnold Swarz',
-      amount: '$3,412',
-      status: 'Completed',
-      statusType: 'completed',
-      date: '11 Sep 2026',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80',
-    },
-    {
-      id: 'ord_4',
-      name: 'Rahul Sharma',
-      amount: '$15,000',
-      status: 'Completed',
-      statusType: 'completed',
-      date: '10 Sep 2026',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80',
-    },
-  ];
+  invoices.forEach((inv) => {
+    if (inv.issueDate) {
+      const d = new Date(inv.issueDate);
+      const dayIndex = d.getDay() === 0 ? 6 : d.getDay() - 1;
+      dayVolumes[dayIndex] += Number(inv.totalAmount || 0);
+    }
+  });
 
-  // Recent Sales items
-  const recentSales = [
-    {
-      name: 'Steven Summer',
-      time: '02 Minutes Ago',
-      amount: '+$52.00',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80',
-    },
-    {
-      name: 'Jordan Maizee',
-      time: '02 Minutes Ago',
-      amount: '+$83.00',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80',
-    },
-    {
-      name: 'Jessica Alba',
-      time: '05 Minutes Ago',
-      amount: '+$61.60',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80',
-    },
-    {
-      name: 'Frank Miller',
-      time: '10 Minutes Ago',
-      amount: '+$152.00',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=80&q=80',
-    },
-  ];
+  const maxVolume = Math.max(...dayVolumes, 1);
+  const weeklyCapsuleData = daysOfWeek.map((day, idx) => ({
+    day,
+    heightPct: Math.round((dayVolumes[idx] / maxVolume) * 90) + (dayVolumes[idx] > 0 ? 10 : 0),
+    filledAmount: `₹${dayVolumes[idx].toLocaleString('en-IN')}`,
+    rawAmount: dayVolumes[idx],
+  }));
+
+  // Filtered lists based on search
+  const filteredInvoices = invoices.filter((inv) =>
+    (inv.clientName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (inv.invoiceNumber || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredTransactions = transactions.filter((tx) =>
+    (tx.invoice?.clientName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (tx.providerOrderId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (tx.providerPaymentId || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Calculate real collection percentage from database
+  const collectionRate = totalInvoiced > 0 ? Math.round((totalBalance / totalInvoiced) * 100) : 0;
+  const outstandingRate = totalInvoiced > 0 ? Math.round((totalOutstanding / totalInvoiced) * 100) : 0;
+  const draftOrOtherRate = Math.max(0, 100 - collectionRate - outstandingRate);
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
@@ -133,32 +105,32 @@ export const DashboardPage = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black text-[#1C1D22] tracking-tight">
-              Dashboard
+              Financial Overview
             </h1>
-            <p className="text-xs font-semibold mt-0.5" style={{ color: '#8E9297' }}>
-              Payments Updates
+            <p className="text-xs font-semibold mt-0.5 text-[#8E9297]">
+              Authoritative ledger & revenue metrics from PostgreSQL
             </p>
           </div>
 
-          {/* Search Pill Input matching reference */}
+          {/* Search Input */}
           <div className="relative w-full sm:w-72">
             <Search className="w-4 h-4 text-slate-400 absolute left-4 top-3" />
             <input
               type="text"
-              placeholder="Search"
+              placeholder="Search invoices & payments"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white border rounded-2xl pl-10 pr-4 py-2.5 text-xs text-[#1C1D22] placeholder-slate-400 focus:outline-none focus:border-slate-400 shadow-xs"
+              className="w-full bg-white border rounded-2xl pl-10 pr-4 py-2.5 text-xs text-[#1C1D22] placeholder-slate-400 focus:outline-none focus:border-[#1C1D22] shadow-xs"
               style={{ borderColor: '#E8E4DC' }}
             />
           </div>
         </div>
 
         {/* ======================================================== */}
-        {/* 3 PASTEL FEATURE CARDS (Sage, Gold, Indigo)             */}
+        {/* 3 REAL METRIC CARDS                                      */}
         {/* ======================================================== */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Card 1: Balance (Pastel Sage) */}
+          {/* Card 1: Total Captured Balance (Pastel Sage) */}
           <div
             className="rounded-3xl p-5 flex flex-col justify-between shadow-xs relative overflow-hidden h-44"
             style={{ backgroundColor: '#CFDDC8', color: '#1A3018' }}
@@ -170,19 +142,19 @@ export const DashboardPage = () => {
                     className="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black"
                     style={{ backgroundColor: '#B8CBB2', color: '#1A3018' }}
                   >
-                    $
+                    ₹
                   </span>
-                  Balance
+                  Settled Volume
                 </span>
                 <span
-                  className="text-xs font-bold px-2 py-0.5 rounded-full"
+                  className="text-xs font-bold px-2 py-0.5 rounded-full font-mono"
                   style={{ backgroundColor: '#B8CBB2', color: '#1A3018' }}
                 >
-                  + 17%
+                  {paymentMetrics.successfulCount || 0} Paid
                 </span>
               </div>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: '#1A3018' }}>
-                $ {totalBalance.toLocaleString('en-IN')}
+              <p className="text-2xl sm:text-3xl font-black tracking-tight font-mono" style={{ color: '#1A3018' }}>
+                ₹{totalBalance.toLocaleString('en-IN')}
               </p>
             </div>
 
@@ -197,7 +169,7 @@ export const DashboardPage = () => {
             </svg>
           </div>
 
-          {/* Card 2: Sales (Pastel Honey Gold) */}
+          {/* Card 2: Total Invoiced Sales (Pastel Honey Gold) */}
           <div
             className="rounded-3xl p-5 flex flex-col justify-between shadow-xs relative overflow-hidden h-44"
             style={{ backgroundColor: '#F9DC90', color: '#3A2E12' }}
@@ -209,19 +181,19 @@ export const DashboardPage = () => {
                     className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black"
                     style={{ backgroundColor: '#ECCB6F', color: '#3A2E12' }}
                   >
-                    %
+                    #
                   </span>
-                  Sales
+                  Total Invoiced
                 </span>
                 <span
-                  className="text-xs font-bold px-2 py-0.5 rounded-full"
+                  className="text-xs font-bold px-2 py-0.5 rounded-full font-mono"
                   style={{ backgroundColor: '#ECCB6F', color: '#3A2E12' }}
                 >
-                  + 23%
+                  {invoiceCounts.total || 0} Invoices
                 </span>
               </div>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: '#3A2E12' }}>
-                $ {totalSales.toLocaleString('en-IN')}
+              <p className="text-2xl sm:text-3xl font-black tracking-tight font-mono" style={{ color: '#3A2E12' }}>
+                ₹{totalInvoiced.toLocaleString('en-IN')}
               </p>
             </div>
 
@@ -236,33 +208,40 @@ export const DashboardPage = () => {
             </svg>
           </div>
 
-          {/* Card 3: Upgrade / AI (Pastel Periwinkle Indigo) */}
+          {/* Card 3: Receivables / Outstanding (Pastel Lavender) */}
           <div
             className="rounded-3xl p-5 flex flex-col justify-between shadow-xs h-44"
             style={{ backgroundColor: '#8E9EF8', color: '#FFFFFF' }}
           >
             <div>
-              <h3 className="text-sm font-black tracking-tight text-white">Upgrade</h3>
-              <p className="text-xs text-white/95 mt-1 leading-snug">
-                Get more information and opportunities
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold flex items-center gap-1.5 text-white/90">
+                  <Clock className="w-3.5 h-3.5" /> Receivables
+                </span>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-white/20 text-white font-mono">
+                  {invoiceCounts.sent || 0} Pending
+                </span>
+              </div>
+              <p className="text-2xl sm:text-3xl font-black tracking-tight font-mono text-white">
+                ₹{totalOutstanding.toLocaleString('en-IN')}
               </p>
             </div>
 
             <button
-              onClick={() => navigate('/business/ai')}
-              className="w-full py-2 px-4 rounded-xl text-white text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5"
+              onClick={() => navigate('/business/invoices?create=true')}
+              className="w-full py-2 px-4 rounded-xl text-white text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
               style={{ backgroundColor: '#5D6FE8' }}
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#4A5CD6')}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#5D6FE8')}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              Go Pro
+              <Plus className="w-3.5 h-3.5" />
+              New Invoice
             </button>
           </div>
         </div>
 
         {/* ======================================================== */}
-        {/* CAPSULE BAR CHART: "User in The Last Week"               */}
+        {/* DYNAMIC CAPSULE BAR CHART: Volume in Last Week           */}
         {/* ======================================================== */}
         <div
           className="rounded-3xl p-6 border shadow-xs"
@@ -271,18 +250,18 @@ export const DashboardPage = () => {
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <span className="text-xs font-semibold block" style={{ color: '#8E9297' }}>
-                User in The Last Week
+              <span className="text-xs font-semibold block text-[#8E9297]">
+                Weekly Invoiced Distribution
               </span>
-              <p className="text-2xl font-black text-[#1C1D22] tracking-tight mt-0.5">
-                + 3,2%
+              <p className="text-xl font-black text-[#1C1D22] tracking-tight mt-0.5 font-mono">
+                {weeklyCapsuleData[activeDayIndex].filledAmount} on {weeklyCapsuleData[activeDayIndex].day}
               </p>
             </div>
             <button
-              className="text-xs font-semibold hover:underline"
-              style={{ color: '#8E9297' }}
+              onClick={() => navigate('/business/invoices')}
+              className="text-xs font-bold text-[#1C1D22] hover:underline cursor-pointer"
             >
-              See statistics for all time
+              View Invoices
             </button>
           </div>
 
@@ -310,7 +289,6 @@ export const DashboardPage = () => {
                       >
                         {item.filledAmount}
                       </div>
-                      {/* Tooltip dot */}
                       <div
                         className="w-1.5 h-1.5 rounded-full mt-0.5 border"
                         style={{ backgroundColor: '#1C1D22', borderColor: '#FFFFFF' }}
@@ -335,8 +313,8 @@ export const DashboardPage = () => {
                     <div
                       className="w-full rounded-full transition-all duration-300"
                       style={{
-                        height: `${item.heightPct}%`,
-                        backgroundColor: '#1C1D22',
+                        height: `${Math.max(item.heightPct, 6)}%`,
+                        backgroundColor: isSelected ? '#1C1D22' : '#8E9297',
                       }}
                     />
                   </div>
@@ -357,7 +335,7 @@ export const DashboardPage = () => {
         </div>
 
         {/* ======================================================== */}
-        {/* LAST ORDERS SECTION                                      */}
+        {/* AUTHORITATIVE DATABASE INVOICES TABLE                     */}
         {/* ======================================================== */}
         <div
           className="rounded-3xl p-6 border shadow-xs"
@@ -367,76 +345,100 @@ export const DashboardPage = () => {
             <div>
               <div className="flex items-center gap-3">
                 <h3 className="text-base font-black text-[#1C1D22] tracking-tight">
-                  Last Orders
+                  Recent Invoices
                 </h3>
                 <span
-                  className="text-[10px] font-bold px-2.5 py-0.5 rounded-full"
-                  style={{ backgroundColor: '#FAF8F5', color: '#8E9297', border: '1px solid #E8E4DC' }}
+                  className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#FAF8F5] text-[#8E9297] border border-[#E8E4DC]"
                 >
-                  Data Updates Every 3 Hours
+                  PostgreSQL Realtime
                 </span>
               </div>
             </div>
 
             <button
               onClick={() => navigate('/business/invoices')}
-              className="text-xs font-bold hover:underline self-start sm:self-auto"
-              style={{ color: '#1C1D22' }}
+              className="text-xs font-bold text-[#1C1D22] hover:underline self-start sm:self-auto cursor-pointer"
             >
-              View All Orders
+              View All Invoices
             </button>
           </div>
 
           {/* Orders Table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b" style={{ borderColor: '#F0ECE4' }}>
-                  <th className="pb-3 font-bold" style={{ color: '#8E9297' }}>Customer</th>
-                  <th className="pb-3 font-bold" style={{ color: '#8E9297' }}>Total</th>
-                  <th className="pb-3 font-bold" style={{ color: '#8E9297' }}>Status</th>
-                  <th className="pb-3 font-bold text-right" style={{ color: '#8E9297' }}>Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y" style={{ borderColor: '#F5F2EA' }}>
-                {recentOrders.map((order) => {
-                  const isChargeback = order.statusType === 'chargeback';
+            {filteredInvoices.length > 0 ? (
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b" style={{ borderColor: '#F0ECE4' }}>
+                    <th className="pb-3 font-bold text-[#8E9297]">Client</th>
+                    <th className="pb-3 font-bold text-[#8E9297]">Invoice #</th>
+                    <th className="pb-3 font-bold text-[#8E9297]">Total</th>
+                    <th className="pb-3 font-bold text-[#8E9297]">Status</th>
+                    <th className="pb-3 font-bold text-right text-[#8E9297]">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y" style={{ borderColor: '#F5F2EA' }}>
+                  {filteredInvoices.map((inv) => {
+                    const isPaid = inv.status === 'PAID';
+                    const isDraft = inv.status === 'DRAFT';
 
-                  return (
-                    <tr key={order.id} className="hover:bg-[#FAF8F5] transition">
-                      <td className="py-3.5 flex items-center gap-3">
-                        <img
-                          src={order.avatar}
-                          alt={order.name}
-                          className="w-8 h-8 rounded-full object-cover shadow-xs"
-                        />
-                        <span className="font-bold text-[#1C1D22]">{order.name}</span>
-                      </td>
+                    return (
+                      <tr
+                        key={inv.id}
+                        onClick={() => navigate(`/business/invoices/${inv.id}`)}
+                        className="hover:bg-[#FAF8F5] transition cursor-pointer"
+                      >
+                        <td className="py-3.5">
+                          <span className="font-bold text-[#1C1D22] block">
+                            {inv.clientName || 'Unregistered Client'}
+                          </span>
+                          <span className="text-[11px] text-[#8E9297] font-mono">
+                            {inv.clientEmail}
+                          </span>
+                        </td>
 
-                      <td className="py-3.5 font-bold text-[#1C1D22]">
-                        {order.amount}
-                      </td>
+                        <td className="py-3.5 font-mono text-[#8E9297] font-semibold">
+                          {inv.invoiceNumber}
+                        </td>
 
-                      <td className="py-3.5">
-                        <span
-                          className="px-3 py-1 rounded-full text-[11px] font-bold inline-block"
-                          style={{
-                            backgroundColor: isChargeback ? '#8E9EF8' : '#CFDDC8',
-                            color: isChargeback ? '#FFFFFF' : '#1A3018',
-                          }}
-                        >
-                          {order.status}
-                        </span>
-                      </td>
+                        <td className="py-3.5 font-bold font-mono text-[#1C1D22]">
+                          ₹{Number(inv.totalAmount).toLocaleString('en-IN')}
+                        </td>
 
-                      <td className="py-3.5 text-right font-medium" style={{ color: '#8E9297' }}>
-                        {order.date}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        <td className="py-3.5">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold inline-block border ${
+                              isPaid
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                : isDraft
+                                  ? 'bg-slate-100 text-slate-700 border-slate-200'
+                                  : 'bg-amber-50 text-amber-800 border-amber-200'
+                            }`}
+                          >
+                            {inv.status}
+                          </span>
+                        </td>
+
+                        <td className="py-3.5 text-right font-medium text-[#8E9297] font-mono">
+                          {inv.issueDate ? new Date(inv.issueDate).toLocaleDateString('en-IN') : '-'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              <div className="py-12 text-center">
+                <FileText className="w-8 h-8 text-[#8E9297] mx-auto mb-2 opacity-50" />
+                <p className="text-xs font-bold text-[#1C1D22]">No invoices found in database</p>
+                <p className="text-[11px] text-[#8E9297] mt-0.5">Issue an invoice to begin recording business receivables</p>
+                <button
+                  onClick={() => navigate('/business/invoices?create=true')}
+                  className="mt-3 px-3.5 py-1.5 rounded-xl bg-[#1C1D22] text-white text-xs font-bold hover:bg-black transition cursor-pointer"
+                >
+                  Create Invoice
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -445,7 +447,7 @@ export const DashboardPage = () => {
       {/* RIGHT SIDEBAR (320px)                                    */}
       {/* ======================================================== */}
       <div className="w-full lg:w-80 space-y-6">
-        {/* Monthly Profits Card */}
+        {/* Revenue Breakdown Card */}
         <div
           className="rounded-3xl p-6 border shadow-xs"
           style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E4DC' }}
@@ -454,18 +456,18 @@ export const DashboardPage = () => {
           <div className="flex items-start justify-between mb-6">
             <div>
               <h3 className="text-base font-black text-[#1C1D22] tracking-tight">
-                Monthly Profits
+                Collection Ratio
               </h3>
-              <p className="text-xs font-semibold mt-0.5" style={{ color: '#8E9297' }}>
-                Total Profit Growth of 26%
+              <p className="text-xs font-semibold mt-0.5 text-[#8E9297]">
+                Live settlement proportion
               </p>
             </div>
             <button
-              className="p-1.5 rounded-xl hover:bg-slate-50 transition"
-              style={{ color: '#8E9297' }}
-              title="Share"
+              onClick={() => navigate('/business/analytics')}
+              className="p-1.5 rounded-xl hover:bg-slate-50 transition text-[#8E9297] cursor-pointer"
+              title="View Analytics"
             >
-              <Share2 className="w-4 h-4" />
+              <ArrowUpRight className="w-4 h-4" />
             </button>
           </div>
 
@@ -483,33 +485,7 @@ export const DashboardPage = () => {
                   strokeWidth="10"
                 />
 
-                {/* Segment 1: Periwinkle / Indigo (60%) */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="38"
-                  fill="none"
-                  stroke="#8E9EF8"
-                  strokeWidth="10"
-                  strokeDasharray="143 238"
-                  strokeDashoffset="0"
-                  strokeLinecap="round"
-                />
-
-                {/* Segment 2: Honey Gold (24%) */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="38"
-                  fill="none"
-                  stroke="#F9DC90"
-                  strokeWidth="10"
-                  strokeDasharray="57 238"
-                  strokeDashoffset="-148"
-                  strokeLinecap="round"
-                />
-
-                {/* Segment 3: Pastel Sage (16%) */}
+                {/* Segment 1: Paid (Sage) */}
                 <circle
                   cx="50"
                   cy="50"
@@ -517,19 +493,32 @@ export const DashboardPage = () => {
                   fill="none"
                   stroke="#CFDDC8"
                   strokeWidth="10"
-                  strokeDasharray="38 238"
-                  strokeDashoffset="-210"
+                  strokeDasharray={`${Math.max(1, (collectionRate / 100) * 238)} 238`}
+                  strokeDashoffset="0"
+                  strokeLinecap="round"
+                />
+
+                {/* Segment 2: Outstanding (Gold) */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="38"
+                  fill="none"
+                  stroke="#F9DC90"
+                  strokeWidth="10"
+                  strokeDasharray={`${Math.max(1, (outstandingRate / 100) * 238)} 238`}
+                  strokeDashoffset={`-${(collectionRate / 100) * 238}`}
                   strokeLinecap="round"
                 />
               </svg>
 
               {/* Centered Total Text */}
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                <span className="text-[10px] font-bold" style={{ color: '#8E9297' }}>
-                  Total
+                <span className="text-[10px] font-bold text-[#8E9297]">
+                  Settled
                 </span>
-                <span className="text-xl font-black text-[#1C1D22] tracking-tight">
-                  $ {profitTotal.toLocaleString('en-IN')}
+                <span className="text-xl font-black text-[#1C1D22] tracking-tight font-mono">
+                  {collectionRate}%
                 </span>
               </div>
             </div>
@@ -538,73 +527,70 @@ export const DashboardPage = () => {
             <div className="w-full mt-6 space-y-3">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#8E9EF8' }} />
-                  <span className="font-semibold" style={{ color: '#8E9297' }}>Giveaway</span>
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#CFDDC8' }} />
+                  <span className="font-semibold text-[#8E9297]">Settled / Paid</span>
                 </div>
-                <span className="font-black text-[#1C1D22]">60%</span>
+                <span className="font-black text-[#1C1D22] font-mono">₹{totalBalance.toLocaleString('en-IN')}</span>
               </div>
 
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#F9DC90' }} />
-                  <span className="font-semibold" style={{ color: '#8E9297' }}>Affiliate</span>
+                  <span className="font-semibold text-[#8E9297]">Outstanding</span>
                 </div>
-                <span className="font-black text-[#1C1D22]">24%</span>
-              </div>
-
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#CFDDC8' }} />
-                  <span className="font-semibold" style={{ color: '#8E9297' }}>Offline Sales</span>
-                </div>
-                <span className="font-black text-[#1C1D22]">16%</span>
+                <span className="font-black text-[#1C1D22] font-mono">₹{totalOutstanding.toLocaleString('en-IN')}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Recent Sales List */}
+        {/* Real Database Transactions List */}
         <div
           className="rounded-3xl p-6 border shadow-xs"
           style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E4DC' }}
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-black text-[#1C1D22] tracking-tight">
-              Recent Sales
+              Settlements
             </h3>
             <button
-              onClick={() => navigate('/business/invoices')}
-              className="text-xs font-semibold hover:underline"
-              style={{ color: '#8E9297' }}
+              onClick={() => navigate('/business/payments')}
+              className="text-xs font-semibold text-[#8E9297] hover:underline cursor-pointer"
             >
               See All
             </button>
           </div>
 
-          <div className="space-y-4">
-            {recentSales.map((sale, idx) => (
-              <div key={idx} className="flex items-center justify-between py-1">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={sale.avatar}
-                    alt={sale.name}
-                    className="w-10 h-10 rounded-full object-cover shadow-xs"
-                  />
-                  <div>
-                    <p className="text-xs font-bold text-[#1C1D22] leading-tight">
-                      {sale.name}
-                    </p>
-                    <p className="text-[10px] font-medium leading-tight mt-0.5" style={{ color: '#8E9297' }}>
-                      {sale.time}
-                    </p>
+          <div className="space-y-3">
+            {filteredTransactions.length > 0 ? (
+              filteredTransactions.map((tx) => (
+                <div key={tx.id} className="flex items-center justify-between py-2 border-b border-[#FAF8F5] last:border-none">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-[#FAF8F5] border border-[#E8E4DC] flex items-center justify-center shrink-0">
+                      <CreditCard className="w-4 h-4 text-[#1C1D22]" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[#1C1D22] leading-tight truncate">
+                        {tx.invoice?.clientName || 'Client Payment'}
+                      </p>
+                      <p className="text-[10px] font-mono text-[#8E9297] mt-0.5 truncate">
+                        {tx.providerPaymentId || tx.providerOrderId || 'Settled'}
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <span className="text-xs font-black text-[#1C1D22]">
-                  {sale.amount}
-                </span>
+                  <span className="text-xs font-black text-emerald-700 font-mono shrink-0 ml-2">
+                    +₹{Number(tx.amount).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center">
+                <CreditCard className="w-6 h-6 text-[#8E9297] mx-auto mb-1.5 opacity-50" />
+                <p className="text-xs font-bold text-[#1C1D22]">No settlements yet</p>
+                <p className="text-[10px] text-[#8E9297]">Completed payments will appear here</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

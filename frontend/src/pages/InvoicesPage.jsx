@@ -394,7 +394,9 @@ export const InvoicesPage = () => {
                       </button>
                     </td>
                     <td className="py-3.5 px-4 font-bold text-[#1C1D22]">
-                      {activeRole === 'business' ? (inv.client?.name || 'Client') : (inv.workspace?.name || 'TechNova Solutions')}
+                      {activeRole === 'business'
+                        ? (inv.clientName || inv.clientEmail)
+                        : (inv.businessUser?.businessProfile?.businessName || inv.businessUser?.fullName || 'Business Workspace')}
                     </td>
                     <td className="py-3.5 px-4 font-medium text-[#8E9297]">
                       {new Date(inv.issueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -551,7 +553,7 @@ export const InvoicesPage = () => {
                       <label className="block text-[11px] font-semibold text-[#8E9297] mb-1">Client Full Name *</label>
                       <input
                         type="text"
-                        placeholder="e.g. Rahul Sharma"
+                        placeholder="e.g. Acme Innovations"
                         value={customClientName}
                         onChange={(e) => setCustomClientName(e.target.value)}
                         className="w-full bg-white border border-[#E8E4DC] rounded-xl px-3 py-2 text-xs text-[#1C1D22] placeholder-[#8E9297] focus:outline-none focus:border-[#1C1D22]"
@@ -562,7 +564,7 @@ export const InvoicesPage = () => {
                       <label className="block text-[11px] font-semibold text-[#8E9297] mb-1">Client Email Address *</label>
                       <input
                         type="email"
-                        placeholder="e.g. rahul@clientcorp.com"
+                        placeholder="e.g. billing@acme.com"
                         value={customClientEmail}
                         onChange={(e) => setCustomClientEmail(e.target.value)}
                         className="w-full bg-white border border-[#E8E4DC] rounded-xl px-3 py-2 text-xs text-[#1C1D22] placeholder-[#8E9297] focus:outline-none focus:border-[#1C1D22]"
@@ -753,9 +755,15 @@ export const InvoicesPage = () => {
             <div className="p-5 rounded-2xl bg-[#FAF8F5] border border-[#E8E4DC] text-xs space-y-4 text-[#1C1D22]">
               <div className="flex justify-between items-start border-b border-[#E8E4DC] pb-3">
                 <div>
-                  <h3 className="text-base font-black text-[#1C1D22]">{activeWorkspace?.name || 'TechNova Solutions'}</h3>
-                  <p className="text-[#8E9297] text-[11px] font-medium">GSTIN: 29ABCDE1234F1Z5</p>
-                  <p className="text-[#8E9297] text-[11px] font-medium">Bengaluru, Karnataka, India</p>
+                  <h3 className="text-base font-black text-[#1C1D22]">
+                    {user?.businessProfile?.businessName || activeWorkspace?.name || user?.fullName || 'Wealthra Business'}
+                  </h3>
+                  <p className="text-[#8E9297] text-[11px] font-medium">
+                    {user?.businessProfile?.taxId ? `GSTIN: ${user.businessProfile.taxId}` : 'Verified Digital Merchant'}
+                  </p>
+                  <p className="text-[#8E9297] text-[11px] font-medium">
+                    {user?.businessProfile?.city ? `${user.businessProfile.city}, ${user.businessProfile.country || 'India'}` : 'India'}
+                  </p>
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-[#F5C869]/20 text-[#1C1D22] border border-[#E5B550] uppercase font-bold">

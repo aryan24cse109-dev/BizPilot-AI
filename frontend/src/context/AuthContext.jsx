@@ -41,18 +41,15 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (emailOrUsername, password, roleHint) => {
-    const email = (emailOrUsername || 'business@bizpilot.ai').trim();
+    const email = (emailOrUsername || 'business@wealthra.com').trim();
     const accountCategory = (
       roleHint ||
-      (email.toLowerCase().includes('client') || email.toLowerCase().includes('rahul')
+      (email.toLowerCase().includes('client')
         ? 'CLIENT'
         : 'BUSINESS')
     ).toUpperCase();
 
-    const fullName =
-      accountCategory === 'BUSINESS'
-        ? 'Rajesh Kumar (TechNova)'
-        : 'Rahul Sharma (Rahul Enterprises)';
+    const fullName = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
     const res = await authApi.login({
       email,

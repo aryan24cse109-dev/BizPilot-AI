@@ -11,7 +11,7 @@ export const LoginPage = () => {
   const { login } = useAuth();
   const toast = useToast();
 
-  const [emailOrUsername, setEmailOrUsername] = useState('business@bizpilot.ai');
+  const [emailOrUsername, setEmailOrUsername] = useState('business@wealthra.com');
   const [password, setPassword] = useState('Password@123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -38,13 +38,13 @@ export const LoginPage = () => {
 
   const fillDemoAccount = (role) => {
     if (role === 'business') {
-      setEmailOrUsername('business@bizpilot.ai');
+      setEmailOrUsername('business@wealthra.com');
       setPassword('Password@123');
-      toast.info('Demo Credentials Loaded', 'Business Account: Rajesh Kumar (TechNova)');
+      toast.info('Account Selected', 'Business Owner Credentials');
     } else {
-      setEmailOrUsername('rahul@rahulenterprises.com');
+      setEmailOrUsername('client@wealthra.com');
       setPassword('Password@123');
-      toast.info('Demo Credentials Loaded', 'Client Account: Rahul Sharma (Rahul Enterprises)');
+      toast.info('Account Selected', 'Client Account Credentials');
     }
   };
 
@@ -68,24 +68,24 @@ export const LoginPage = () => {
           <button
             type="button"
             onClick={() => fillDemoAccount('business')}
-            className="p-2 rounded-lg bg-white dark:bg-charcoal-800 border border-slate-200 dark:border-slate-700/60 text-left transition hover:border-emerald-primary/40 flex items-center justify-between"
+            className="p-2 rounded-lg bg-white dark:bg-charcoal-800 border border-slate-200 dark:border-slate-700/60 text-left transition hover:border-[#1C1D22] flex items-center justify-between cursor-pointer"
           >
             <div>
-              <p className="font-bold text-emerald-primary text-xs">Business Account</p>
-              <p className="text-[10px] text-slate-500">Rajesh Kumar</p>
+              <p className="font-bold text-[#1C1D22] dark:text-white text-xs">Business Owner</p>
+              <p className="text-[10px] text-slate-500 font-mono">business@wealthra.com</p>
             </div>
-            <UserCheck className="w-3.5 h-3.5 text-emerald-primary" />
+            <UserCheck className="w-3.5 h-3.5 text-amber-500" />
           </button>
           <button
             type="button"
             onClick={() => fillDemoAccount('client')}
-            className="p-2 rounded-lg bg-white dark:bg-charcoal-800 border border-slate-200 dark:border-slate-700/60 text-left transition hover:border-teal-400/40 flex items-center justify-between"
+            className="p-2 rounded-lg bg-white dark:bg-charcoal-800 border border-slate-200 dark:border-slate-700/60 text-left transition hover:border-[#1C1D22] flex items-center justify-between cursor-pointer"
           >
             <div>
-              <p className="font-bold text-teal-600 dark:text-teal-400 text-xs">Client Account</p>
-              <p className="text-[10px] text-slate-500">Rahul Sharma</p>
+              <p className="font-bold text-[#1C1D22] dark:text-white text-xs">Client Account</p>
+              <p className="text-[10px] text-slate-500 font-mono">client@wealthra.com</p>
             </div>
-            <UserCheck className="w-3.5 h-3.5 text-teal-500" />
+            <UserCheck className="w-3.5 h-3.5 text-emerald-500" />
           </button>
         </div>
       </div>

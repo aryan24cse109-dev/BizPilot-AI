@@ -13,8 +13,8 @@ export const OnboardingPage = () => {
 
   const [roleChoice, setRoleChoice] = useState('business'); // 'business' or 'client'
   const [businessStructure, setBusinessStructure] = useState('Agency');
-  const [businessName, setBusinessName] = useState(user?.activeWorkspace?.name || 'TechNova Solutions');
-  const [taxId, setTaxId] = useState('29ABCDE1234F1Z5');
+  const [businessName, setBusinessName] = useState(user?.businessProfile?.businessName || (user?.fullName ? `${user.fullName}'s Workspace` : ''));
+  const [taxId, setTaxId] = useState('');
   const [currency, setCurrency] = useState('INR');
   const [submitting, setSubmitting] = useState(false);
 
@@ -40,7 +40,7 @@ export const OnboardingPage = () => {
 
       setActiveRole(roleChoice);
       localStorage.setItem('bizpilot_active_role', roleChoice);
-      toast.success('Workspace Configured', `Welcome to BizPilot as a ${roleChoice === 'business' ? 'Business Owner' : 'Client'}!`);
+      toast.success('Workspace Configured', `Welcome to Wealthra™ as a ${roleChoice === 'business' ? 'Business Owner' : 'Client'}!`);
       navigate(roleChoice === 'business' ? '/business' : '/portal');
     } catch (err) {
       console.error('Onboarding failed:', err);
@@ -58,7 +58,7 @@ export const OnboardingPage = () => {
       <div className="mb-6 text-center">
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Account & Profile Setup</h2>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          Select how you primarily intend to use BizPilot AI. You can switch anytime.
+          Select how you primarily intend to use Wealthra™. You can switch anytime.
         </p>
       </div>
 

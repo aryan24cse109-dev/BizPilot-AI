@@ -330,7 +330,7 @@ export const ClientsPage = () => {
             label="Client Full Name *"
             value={newClientName}
             onChange={(e) => setNewClientName(e.target.value)}
-            placeholder="e.g. Rahul Sharma"
+            placeholder="e.g. Acme Innovations"
             required
           />
 
@@ -339,7 +339,7 @@ export const ClientsPage = () => {
             type="email"
             value={newClientEmail}
             onChange={(e) => setNewClientEmail(e.target.value)}
-            placeholder="e.g. rahul@rahulenterprises.com"
+            placeholder="e.g. accounts@acme.com"
             required
           />
 
@@ -347,7 +347,7 @@ export const ClientsPage = () => {
             label="Company / Legal Entity (Optional)"
             value={newClientCompany}
             onChange={(e) => setNewClientCompany(e.target.value)}
-            placeholder="e.g. Rahul Enterprises Pvt Ltd"
+            placeholder="e.g. Acme Innovations Pvt Ltd"
           />
 
           <p className="text-[11px] text-[#8E9297]">

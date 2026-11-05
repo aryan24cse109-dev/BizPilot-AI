@@ -64,7 +64,7 @@ export const AcceptInvitationPage = () => {
             Business Collaboration Invitation
           </h1>
           <p className="text-xs text-[#8E9297] font-medium">
-            A business on BizPilot AI has invited your client account to collaborate and receive digital tax invoices.
+            A verified business has invited your account to collaborate and receive digital tax invoices on Wealthra™.
           </p>
         </div>
 

@@ -96,72 +96,35 @@ export const UnifiedLayout = () => {
         style={{ backgroundColor: '#1C1D22', borderColor: '#2B2C33', color: '#FFFFFF' }}
       >
         <div className="flex flex-col flex-1 min-h-0">
-          {/* Top Brand / Logo */}
-          <div className="flex items-center gap-3 px-2 py-1.5 mb-4">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-md shrink-0"
-              style={{ backgroundColor: '#2C2D35', border: '1px solid rgba(255, 255, 255, 0.12)' }}
-            >
-              {navigationMode === 'CLIENT_ONLY' ? (
-                <ShieldCheck className="w-5 h-5 text-[#CFDDC8]" />
-              ) : (
-                <div className="w-5 h-5 rounded-md bg-[#F5C869] flex items-center justify-center text-[#1C1D22] font-black text-xs">
-                  BP
-                </div>
+          {/* Top Brand / Wealthra Logo */}
+          <div className="px-2 py-2 mb-4">
+            <div className="flex items-center gap-2 mb-1.5">
+              <img
+                src="/wealthra-logo.png"
+                alt="Wealthra"
+                className="h-8 w-auto max-w-[170px] object-contain"
+              />
+            </div>
+            <p className="text-[10px] font-medium leading-tight flex items-center gap-1.5" style={{ color: '#8E9297' }}>
+              {navigationMode === 'DUAL_ROLE' && (
+                <>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span>Dual Role Workspace</span>
+                </>
               )}
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-base font-black tracking-tight text-white leading-tight truncate">
-                BizPilot <span style={{ color: navigationMode === 'CLIENT_ONLY' ? '#CFDDC8' : '#F5C869' }}>
-                  {navigationMode === 'CLIENT_ONLY' ? 'Portal' : 'AI'}
-                </span>
-              </h1>
-              <p className="text-[10px] font-medium leading-tight flex items-center gap-1.5 mt-0.5" style={{ color: '#8E9297' }}>
-                {navigationMode === 'DUAL_ROLE' && (
-                  <>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    <span>Dual Role Workspace</span>
-                  </>
-                )}
-                {navigationMode === 'BUSINESS_ONLY' && (
-                  <>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#F5C869]" />
-                    <span>Business Workspace</span>
-                  </>
-                )}
-                {navigationMode === 'CLIENT_ONLY' && (
-                  <>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#CFDDC8]" />
-                    <span>Client Portal</span>
-                  </>
-                )}
-              </p>
-            </div>
-          </div>
-
-          {/* User Profile Mini Pill */}
-          <div
-            className="rounded-xl p-2.5 mb-4 flex items-center gap-2.5 border"
-            style={{ backgroundColor: '#25262C', borderColor: 'rgba(255, 255, 255, 0.08)' }}
-          >
-            <div className="w-8 h-8 rounded-full bg-[#35363F] border border-white/20 flex items-center justify-center text-xs font-bold text-white shrink-0">
-              {user?.fullName?.charAt(0) || user?.name?.charAt(0) || 'U'}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-white truncate leading-tight">
-                {user?.fullName || user?.name || 'Authorized User'}
-              </p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-[10px] text-[#8E9297] truncate font-mono">
-                  {user?.email}
-                </span>
-              </div>
-              <p className="text-[9px] font-semibold text-emerald-400 mt-0.5">
-                {navigationMode === 'DUAL_ROLE' && 'Owner & Client'}
-                {navigationMode === 'BUSINESS_ONLY' && 'Business Owner'}
-                {navigationMode === 'CLIENT_ONLY' && 'Client Account'}
-              </p>
-            </div>
+              {navigationMode === 'BUSINESS_ONLY' && (
+                <>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#F5C869]" />
+                  <span>Business Workspace</span>
+                </>
+              )}
+              {navigationMode === 'CLIENT_ONLY' && (
+                <>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#CFDDC8]" />
+                  <span>Client Portal</span>
+                </>
+              )}
+            </p>
           </div>
 
           {/* Navigation List (Scrollable) */}
@@ -279,34 +242,13 @@ export const UnifiedLayout = () => {
             )}
           </nav>
 
-          {/* Bottom Controls */}
-          <div className="pt-3 border-t border-[#2B2C33] mt-2 flex items-center justify-between px-1">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-xl hover:bg-[#25262C] text-[#8E9297] hover:text-white transition"
-              title="Toggle Theme"
-            >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-
-            <button
-              onClick={() => setShowNotificationDrawer(true)}
-              className="p-2 rounded-xl hover:bg-[#25262C] text-[#8E9297] hover:text-white transition relative"
-              title="Notifications"
-            >
-              <Bell className="w-4 h-4" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500" />
-              )}
-            </button>
-
-            <button
-              onClick={logout}
-              className="p-2 rounded-xl hover:bg-rose-500/20 text-[#8E9297] hover:text-rose-400 transition"
-              title="Sign Out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+          {/* Sidebar Status Footnote */}
+          <div className="pt-3 border-t border-[#2B2C33] mt-2 flex items-center justify-between px-2 text-[10px] text-[#8E9297]">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span>System Online</span>
+            </span>
+            <span className="font-mono text-[9px] text-[#64748B]">v1.0.0</span>
           </div>
         </div>
       </aside>
@@ -319,13 +261,12 @@ export const UnifiedLayout = () => {
         <header className="sticky top-0 z-20 bg-[#F7F5F0]/90 backdrop-blur-md px-6 py-3.5 border-b border-[#E8E4DC] flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span
-              className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
-                isClientView
-                  ? 'bg-[#CFDDC8]/30 border-[#B8CEB0] text-emerald-900'
-                  : 'bg-[#F5C869]/20 border-[#E5B550] text-[#1C1D22]'
-              }`}
+              className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${isClientView
+                ? 'bg-[#CFDDC8]/30 border-[#B8CEB0] text-emerald-900'
+                : 'bg-[#F5C869]/20 border-[#E5B550] text-[#1C1D22]'
+                }`}
             >
-              {isClientView ? 'Client Portal Mode' : 'Business Workspace Mode'}
+              {isClientView ? 'Wealthra Client Portal' : 'Wealthra Business Workspace'}
             </span>
             <span className="text-xs text-[#8E9297] hidden sm:inline">
               {isClientView
@@ -334,13 +275,42 @@ export const UnifiedLayout = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* User Info */}
             <div className="text-right hidden md:block">
-              <p className="text-xs font-bold text-[#1C1D22]">{user?.fullName || user?.name}</p>
+              <p className="text-xs font-bold text-[#1C1D22] leading-tight">{user?.fullName || user?.name}</p>
               <p className="text-[10px] text-[#8E9297]">
-                {user?.accountCategory === 'BUSINESS' ? 'Verified Business Owner' : 'Verified Client'}
+                {navigationMode === 'DUAL_ROLE'
+                  ? 'Business Owner & Client'
+                  : user?.accountCategory === 'BUSINESS'
+                    ? 'Verified Business Owner'
+                    : 'Verified Client'}
               </p>
             </div>
+
+            {/* Notification Bell */}
+            <button
+              onClick={() => setShowNotificationDrawer(true)}
+              className="relative p-2 rounded-xl bg-white border border-[#E8E4DC] text-[#1C1D22] hover:bg-[#FAF8F5] transition shadow-xs flex items-center justify-center cursor-pointer"
+              title="Notifications"
+            >
+              <Bell className="w-4 h-4 text-[#1C1D22]" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] font-black min-w-4 text-center shadow-xs">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Logout Button */}
+            <button
+              onClick={logout}
+              className="p-2 px-3 rounded-xl bg-white border border-[#E8E4DC] text-[#8E9297] hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition shadow-xs flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4 text-rose-500" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
         </header>
 

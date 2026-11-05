@@ -126,7 +126,7 @@ export const ClientPaymentHistoryPage = () => {
                       {p.invoice?.invoiceNumber}
                     </td>
                     <td className="py-3.5 px-4 font-bold text-[#1C1D22]">
-                      {p.workspace?.name || 'TechNova Solutions'}
+                      {p.businessUser?.businessProfile?.businessName || p.businessUser?.fullName || 'Issuing Business'}
                     </td>
                     <td className="py-3.5 px-4 font-mono text-[#8E9297] uppercase">
                       {p.paymentMethod || 'UPI'}

@@ -47,13 +47,7 @@ export const DiscoverPage = () => {
     }
   };
 
-  const sampleBusinesses = [
-    { id: 'usr_sample_1', name: 'Rahul Enterprises', email: 'rahul@rahulenterprises.com', type: 'Technology Client', verified: true },
-    { id: 'usr_sample_2', name: 'Apex Media Corp', email: 'billing@apexmedia.io', type: 'Design & Marketing', verified: true },
-    { id: 'usr_sample_3', name: 'Vortex Global Retail', email: 'accounts@vortexglobal.com', type: 'E-commerce Partner', verified: true },
-  ];
-
-  const displayList = searchResults.length > 0 ? searchResults : sampleBusinesses;
+  const displayList = searchResults;
 
   return (
     <div className="space-y-6 pb-12">

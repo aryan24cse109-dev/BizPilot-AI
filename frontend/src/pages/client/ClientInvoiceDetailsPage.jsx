@@ -81,7 +81,7 @@ export const ClientInvoiceDetailsPage = () => {
           key: orderData.keyId,
           amount: Math.round(Number(paymentAmount) * 100),
           currency: invoice.currency || 'INR',
-          name: invoice.businessUser?.businessProfile?.businessName || 'BizPilot AI Business',
+          name: invoice.businessUser?.businessProfile?.businessName || invoice.workspace?.name || 'Authorized Merchant',
           description: `Payment for Invoice ${invoice.invoiceNumber}`,
           order_id: orderData.orderId,
           handler: async (response) => {
@@ -215,17 +215,23 @@ export const ClientInvoiceDetailsPage = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start gap-6 pb-6 border-b border-slate-200 dark:border-slate-800">
           <div>
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-emerald-primary text-white flex items-center justify-center font-bold text-xs">
-                TN
+              <div className="w-8 h-8 rounded-xl bg-[#1C1D22] text-white flex items-center justify-center font-bold text-xs">
+                {(invoice.businessUser?.businessProfile?.businessName || invoice.businessUser?.fullName || 'B').charAt(0)}
               </div>
               <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                {invoice.workspace?.name || 'TechNova Solutions'}
+                {invoice.businessUser?.businessProfile?.businessName || invoice.businessUser?.fullName || 'Issuing Business'}
               </h2>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-              GSTIN: {invoice.workspace?.businessProfile?.taxId || '29ABCDE1234F1Z5'}
-            </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Bengaluru, Karnataka, India</p>
+            {invoice.businessUser?.businessProfile?.taxId && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                GSTIN: {invoice.businessUser.businessProfile.taxId}
+              </p>
+            )}
+            {invoice.businessUser?.businessProfile?.city && (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {invoice.businessUser.businessProfile.city}, {invoice.businessUser.businessProfile.country || 'India'}
+              </p>
+            )}
           </div>
 
           <div className="text-left sm:text-right space-y-1">
@@ -277,17 +283,15 @@ export const ClientInvoiceDetailsPage = () => {
         {/* Financial Summary */}
         <div className="flex flex-col sm:flex-row justify-between items-start gap-6 pt-2">
           <div className="space-y-2 max-w-sm">
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-charcoal-950 border border-slate-200 dark:border-slate-800 text-xs">
-              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
-                Vendor Payment Instructions:
-              </span>
-              <p className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">
-                UPI: technova@hdfcbank<br />
-                Netbanking: HDFC0001234 A/C 50200012345678
-              </p>
-            </div>
             {invoice.notes && (
-              <p className="text-xs text-slate-500 italic">Note: {invoice.notes}</p>
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-charcoal-950 border border-slate-200 dark:border-slate-800 text-xs">
+                <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+                  Vendor Notes & Instructions:
+                </span>
+                <p className="text-slate-700 dark:text-slate-300 text-[11px]">
+                  {invoice.notes}
+                </p>
+              </div>
             )}
           </div>
 

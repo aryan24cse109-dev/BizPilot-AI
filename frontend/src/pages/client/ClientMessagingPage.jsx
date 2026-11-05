@@ -123,14 +123,14 @@ export const ClientMessagingPage = () => {
                 }`}
               >
                 <div className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-charcoal-800 flex items-center justify-center text-xs font-bold text-slate-700 dark:text-slate-200 shrink-0">
-                  {c.otherUser?.name?.slice(0, 2).toUpperCase() || 'TN'}
+                  {c.otherUser?.name?.slice(0, 2).toUpperCase() || '--'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                    {c.otherUser?.name || 'TechNova Solutions'}
+                    {c.otherUser?.name || 'Authorized Contact'}
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                    {c.lastMessage?.content || 'Inquire regarding invoices'}
+                    {c.lastMessage?.content || 'No messages yet'}
                   </p>
                 </div>
               </button>
@@ -151,11 +151,11 @@ export const ClientMessagingPage = () => {
             <div className="p-4 px-6 border-b border-slate-200 dark:border-slate-800 bg-surface-light dark:bg-charcoal-900 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-emerald-primary/20 text-emerald-primary flex items-center justify-center font-bold text-xs">
-                  {activeConv.otherUser?.name?.slice(0, 2).toUpperCase() || 'TN'}
+                  {activeConv.otherUser?.name?.slice(0, 2).toUpperCase() || '--'}
                 </div>
                 <div>
                   <h3 className="text-xs font-bold text-slate-900 dark:text-white">
-                    {activeConv.otherUser?.name || 'TechNova Solutions'}
+                    {activeConv.otherUser?.name || 'Authorized Contact'}
                   </h3>
                   <p className="text-[10px] text-slate-500 dark:text-slate-400">
                     Vendor Direct Communication Channel

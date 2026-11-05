@@ -32,7 +32,7 @@ export const AIAssistantPage = () => {
     {
       id: 'welcome',
       role: 'assistant',
-      content: `Namaste ${user?.name || 'Business Leader'}! I am your **BizPilot AI Business Operator**.\n\nYou can speak or type to me in **English, Hindi, or Hinglish** to draft invoices, check pending receivables, or query cashflow.\n\nTry asking:\n• *"Rahul ke liye 15000 rupees ka invoice banao for website development."*\n• *"How much money did I collect this month?"*\n• *"Show my pending invoices."*`,
+      content: `Namaste ${user?.name || 'Business Leader'}! I am your **Wealthra™ AI Business Operator**.\n\nYou can speak or type to me in **English, Hindi, or Hinglish** to draft invoices, check pending receivables, or query cashflow.\n\nTry asking:\n• *"Create an invoice of 15000 for client Acme Innovations for website development."*\n• *"How much money did I collect this month?"*\n• *"Show my pending invoices."*`,
       createdAt: new Date().toISOString(),
     }
   ]);
@@ -92,9 +92,7 @@ export const AIAssistantPage = () => {
       toast.info('Voice Recording Started', 'Speak clearly in Hindi, Hinglish, or English...');
     } catch (err) {
       console.warn('Microphone permission or hardware error:', err);
-      // Simulated voice prompt for environments without mic hardware
-      setInputText('Rahul ke liye 15000 rupees ka invoice banao for website development');
-      toast.warning('Microphone Emulation', 'Auto-filled voice sample prompt: "Rahul ke liye 15000 rupees ka invoice banao..."');
+      toast.error('Microphone Access Required', 'Please enable microphone permissions in your browser or type your prompt.');
     }
   };
 
@@ -120,7 +118,7 @@ export const AIAssistantPage = () => {
       }
     } catch (err) {
       console.error('Transcription error:', err);
-      setInputText('Rahul ke liye 15000 rupees ka invoice banao for website development');
+      toast.error('Voice Transcription', 'Could not process audio. Please try typing your request.');
     } finally {
       setLoading(false);
     }
@@ -194,16 +192,16 @@ export const AIAssistantPage = () => {
           const formattedDraft = {
             operation: data.operation,
             input: draftParams,
-            clientName: draftParams.clientName || 'Rahul Sharma',
-            clientEmail: draftParams.clientEmail || 'rahul@rahulenterprises.com',
+            clientName: draftParams.clientName || draftParams.name || 'Billed Client',
+            clientEmail: draftParams.clientEmail || draftParams.email || '',
             items: draftParams.items && draftParams.items.length > 0
-              ? draftParams.items.map(it => ({ ...it, quantity: Number(it.quantity) || 1, unitPrice: Number(it.unitPrice) || Number(it.price || 15000) }))
-              : [{ description: draftParams.description || 'Professional Services', quantity: 1, unitPrice: Number(draftParams.amount || 15000) }],
+              ? draftParams.items.map(it => ({ ...it, quantity: Number(it.quantity) || 1, unitPrice: Number(it.unitPrice) || Number(it.price || 0) }))
+              : [{ description: draftParams.description || 'Professional Services', quantity: 1, unitPrice: Number(draftParams.amount || 0) }],
             dueDate: draftParams.dueDate || new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
             taxRate: 18,
-            subtotal: Number(draftParams.amount || 15000),
-            taxAmount: (Number(draftParams.amount || 15000) * 0.18),
-            totalAmount: (Number(draftParams.amount || 15000) * 1.18),
+            subtotal: Number(draftParams.amount || 0),
+            taxAmount: (Number(draftParams.amount || 0) * 0.18),
+            totalAmount: (Number(draftParams.amount || 0) * 1.18),
           };
           setActiveDraft(formattedDraft);
           setEditedDraft(JSON.parse(JSON.stringify(formattedDraft)));
@@ -330,11 +328,11 @@ export const AIAssistantPage = () => {
   };
 
   const presetPrompts = [
-    { label: 'Create Invoice for Rahul', text: 'Rahul ke liye 15000 rupees ka invoice banao for website development', cat: 'billing' },
+    { label: 'Create Invoice for Client', text: 'Create ₹15,000 invoice for website development and UI design', cat: 'billing' },
     { label: 'Check Month Revenue', text: 'How much money did I collect this month?', cat: 'analytics' },
     { label: 'Show Pending Invoices', text: 'Show my pending invoices', cat: 'analytics' },
     { label: 'Check Overdue Accounts', text: 'Which clients have overdue payments?', cat: 'analytics' },
-    { label: 'Cloud Architecture Invoice', text: 'Create ₹45,000 invoice for Rahul for Cloud Architecture & Security Audit', cat: 'billing' },
+    { label: 'Cloud Architecture Invoice', text: 'Create ₹45,000 invoice for Cloud Architecture & Security Audit', cat: 'billing' },
   ];
 
   const filteredPresets = activeCategory === 'all'
@@ -354,7 +352,7 @@ export const AIAssistantPage = () => {
           </div>
           <div>
             <h2 className="text-sm font-bold text-[#1C1D22] flex items-center gap-2">
-              BizPilot AI Business Operator
+              Wealthra™ AI Business Operator
               <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
                 Sarvam Saaras & Gemini
               </span>
@@ -682,7 +680,7 @@ export const AIAssistantPage = () => {
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Speak or type: 'Rahul ke liye 15000 ka invoice banao for website development'..."
+              placeholder="Speak or type: 'Create an invoice for 15,000 for website design'..."
               className="flex-1 bg-charcoal-950 border border-slate-700/60 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/30 transition"
             />
           )}

@@ -11,12 +11,7 @@ export const AuthLayout = () => {
       {/* Top Simple Header */}
       <div className="p-6 flex items-center justify-between max-w-6xl w-full mx-auto">
         <Link to="/login" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-emerald-primary flex items-center justify-center text-white font-black shadow-md shadow-emerald-500/20">
-            <Zap className="w-5 h-5 fill-current" />
-          </div>
-          <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
-            BizPilot <span className="text-emerald-primary">AI</span>
-          </span>
+          <img src="/wealthra-logo.png" alt="Wealthra" className="h-8 w-auto max-w-[160px] object-contain" />
         </Link>
 
         <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
@@ -34,7 +29,7 @@ export const AuthLayout = () => {
 
       {/* Footer */}
       <footer className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
-        &copy; {new Date().getFullYear()} BizPilot AI Inc. Authoritative Business Invoicing & Settlement Platform.
+        &copy; {new Date().getFullYear()} Wealthra™ Inc. Authoritative Business Invoicing & Settlement Platform.
       </footer>
     </div>
   );

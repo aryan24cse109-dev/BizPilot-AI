@@ -151,7 +151,7 @@ export const InvoiceDetailsPage = () => {
           key: orderData.keyId,
           amount: Math.round(Number(paymentAmount) * 100),
           currency: invoice.currency || 'INR',
-          name: invoice.businessUser?.businessProfile?.businessName || 'BizPilot AI Business',
+          name: invoice.businessUser?.businessProfile?.businessName || invoice.workspace?.name || 'Authorized Merchant',
           description: `Payment for Invoice ${invoice.invoiceNumber}`,
           order_id: orderData.orderId,
           handler: async (response) => {
@@ -350,19 +350,21 @@ export const InvoiceDetailsPage = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start gap-6 pb-6 border-b border-slate-800">
           <div>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center font-black text-charcoal-950 text-sm">
-                BP
-              </div>
+              <img src="/wealthra-logo.png" alt="Logo" className="h-6 w-auto object-contain" />
               <h2 className="text-xl font-black text-white tracking-tight">
-                {invoice.businessUser?.businessProfile?.businessName || invoice.workspace?.name || 'BizPilot AI Enterprise'}
+                {invoice.businessUser?.businessProfile?.businessName || invoice.workspace?.name || 'Wealthra Merchant'}
               </h2>
             </div>
-            <p className="text-xs text-slate-400 mt-2">
-              GSTIN: {invoice.businessUser?.businessProfile?.taxId || '29ABCDE1234F1Z5'}
-            </p>
-            <p className="text-xs text-slate-400">
-              {invoice.businessUser?.businessProfile?.address || 'Indiranagar, Bengaluru, Karnataka, India'}
-            </p>
+            {invoice.businessUser?.businessProfile?.taxId && (
+              <p className="text-xs text-slate-400 mt-2">
+                GSTIN: {invoice.businessUser.businessProfile.taxId}
+              </p>
+            )}
+            {invoice.businessUser?.businessProfile?.address && (
+              <p className="text-xs text-slate-400">
+                {invoice.businessUser.businessProfile.address}
+              </p>
+            )}
           </div>
 
           <div className="text-left sm:text-right space-y-1.5">

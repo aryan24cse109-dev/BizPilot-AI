@@ -22,9 +22,9 @@ export const ClientProfilePage = () => {
   const { isDark, toggleTheme } = useTheme();
   const toast = useToast();
 
-  const [name, setName] = useState(user?.name || 'Rahul Sharma');
-  const [email] = useState(user?.email || 'rahul@rahulenterprises.com');
-  const [company, setCompany] = useState('Rahul Enterprises');
+  const [name, setName] = useState(user?.fullName || user?.name || '');
+  const [email] = useState(user?.email || '');
+  const [company, setCompany] = useState(user?.clientProfile?.billingAddress || '');
   const [language, setLanguage] = useState('en');
   const [notifyInvoices, setNotifyInvoices] = useState(true);
   const [notifyReminders, setNotifyReminders] = useState(true);

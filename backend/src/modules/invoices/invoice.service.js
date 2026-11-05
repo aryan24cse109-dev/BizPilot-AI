@@ -3,6 +3,7 @@ import { prisma } from "../../config/database.js";
 import { env } from "../../config/env.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { sendEmail } from "../../integrations/email/email.service.js";
+import { NotificationService } from "../notifications/notification.service.js";
 import {
   calculateInvoiceTotals,
 } from "./invoice.schema.js";
@@ -480,6 +481,16 @@ export async function sendInvoice(user, invoiceId) {
     },
     include: invoiceInclude,
   });
+
+  if (updatedInvoice.clientUserId) {
+    NotificationService.createNotification({
+      userId: updatedInvoice.clientUserId,
+      type: "INVOICE_SENT",
+      title: "New Tax Invoice Received",
+      body: `${user.fullName || "Business"} issued invoice ${updatedInvoice.invoiceNumber} for ₹${Number(updatedInvoice.totalAmount).toLocaleString('en-IN')}`,
+      data: { invoiceId: updatedInvoice.id, link: `/portal/invoices/${updatedInvoice.id}` },
+    }).catch(() => { });
+  }
 
   try {
     const businessName =
