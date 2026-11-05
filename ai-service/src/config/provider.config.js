@@ -1,3 +1,4 @@
+
 import { env } from './env.js';
 
 export const PROVIDER_CONFIG = Object.freeze({
@@ -11,7 +12,7 @@ export const PROVIDER_CONFIG = Object.freeze({
   groq: Object.freeze({
     name: 'groq',
     apiKey: env.GROQ_API_KEY ?? null,
-    model: env.GROQ_MODEL ?? null,
+    model: env.GROQ_MODEL ?? 'llama-3.3-70b-versatile',
     enabled: Boolean(env.GROQ_API_KEY)
   })
 });
@@ -26,8 +27,7 @@ export const getProviderConfig = (providerName) => {
   return provider;
 };
 
-export const getConfiguredProviderNames = () => {
-  return Object.values(PROVIDER_CONFIG)
+export const getConfiguredProviderNames = () =>
+  Object.values(PROVIDER_CONFIG)
     .filter((provider) => provider.enabled)
     .map((provider) => provider.name);
-};

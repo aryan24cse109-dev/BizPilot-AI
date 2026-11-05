@@ -3,11 +3,13 @@ export const SERVICE_NAME = 'bizpilot-ai-service';
 
 export const SERVICE_VERSION = '1.0.0';
 
+// Supported AI providers.
 export const PROVIDERS = Object.freeze({
   SARVAM: 'sarvam',
   GROQ: 'groq'
 });
 
+// HTTP status codes.
 export const HTTP_STATUS = Object.freeze({
   OK: 200,
   CREATED: 201,
@@ -27,8 +29,10 @@ export const HTTP_STATUS = Object.freeze({
   GATEWAY_TIMEOUT: 504
 });
 
+// Application error codes.
 export const ERROR_CODES = Object.freeze({
   VALIDATION_ERROR: 'VALIDATION_ERROR',
+
   UNAUTHORIZED: 'UNAUTHORIZED',
   FORBIDDEN: 'FORBIDDEN',
   NOT_FOUND: 'NOT_FOUND',
@@ -45,24 +49,29 @@ export const ERROR_CODES = Object.freeze({
   INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR'
 });
 
+// Backend workflow actions supported by BizPilot AI.
 export const WORKFLOW_ACTIONS = Object.freeze({
   GET_INVOICE: 'GET_INVOICE',
   GET_INVOICE_STATUS: 'GET_INVOICE_STATUS',
   GET_PAYMENT_HISTORY: 'GET_PAYMENT_HISTORY',
   GET_OUTSTANDING_BALANCE: 'GET_OUTSTANDING_BALANCE',
   GET_DASHBOARD_SUMMARY: 'GET_DASHBOARD_SUMMARY',
+
   CREATE_INVOICE_DRAFT: 'CREATE_INVOICE_DRAFT',
   PREPARE_PAYMENT_FOLLOWUP: 'PREPARE_PAYMENT_FOLLOWUP',
   PREPARE_CLIENT_MESSAGE: 'PREPARE_CLIENT_MESSAGE',
+
   SEND_INVOICE: 'SEND_INVOICE',
   CANCEL_INVOICE: 'CANCEL_INVOICE'
 });
 
+// Actions requiring explicit user confirmation.
 export const CONFIRMATION_REQUIRED_ACTIONS = Object.freeze([
   WORKFLOW_ACTIONS.SEND_INVOICE,
   WORKFLOW_ACTIONS.CANCEL_INVOICE
 ]);
 
+// AI response categories.
 export const AI_RESPONSE_TYPES = Object.freeze({
   INTENT: 'intent',
   WORKFLOW: 'workflow',
@@ -70,6 +79,7 @@ export const AI_RESPONSE_TYPES = Object.freeze({
   CONVERSATION: 'conversation'
 });
 
+// Default application settings.
 export const DEFAULTS = Object.freeze({
   PAGE: 1,
   PAGE_SIZE: 10,
