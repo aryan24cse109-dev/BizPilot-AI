@@ -210,3 +210,5 @@ export const ClientInvoicesPage = () => {
     </div>
   );
 };
+
+export default ClientInvoicesPage;

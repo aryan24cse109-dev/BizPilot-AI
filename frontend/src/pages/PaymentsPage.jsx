@@ -184,3 +184,5 @@ export const PaymentsPage = () => {
     </div>
   );
 };
+
+export default PaymentsPage;

@@ -173,3 +173,5 @@ export const ClientPaymentHistoryPage = () => {
     </div>
   );
 };
+
+export default ClientPaymentHistoryPage;

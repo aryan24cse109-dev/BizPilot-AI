@@ -171,3 +171,5 @@ export const AnalyticsPage = () => {
     </div>
   );
 };
+
+export default AnalyticsPage;

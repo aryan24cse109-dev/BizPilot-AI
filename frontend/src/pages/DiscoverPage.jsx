@@ -141,3 +141,5 @@ export const DiscoverPage = () => {
     </div>
   );
 };
+
+export default DiscoverPage;

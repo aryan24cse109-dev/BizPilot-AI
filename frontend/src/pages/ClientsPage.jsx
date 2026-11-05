@@ -345,3 +345,5 @@ export const ClientsPage = () => {
     </div>
   );
 };
+
+export default ClientsPage;
