@@ -2,7 +2,10 @@
 import { Router } from "express";
 
 import { authenticate } from "../../middleware/auth.middleware.js";
-import { authorize } from "../../middleware/authorize.middleware.js";
+import {
+  authorize,
+  requireOnboarding
+} from "../../middleware/authorize.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 
 import { invitationRateLimiter } from "../../middleware/rateLimit.middleware.js";
@@ -19,7 +22,7 @@ import {
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate, requireOnboarding);
 
 router.post(
   "/",

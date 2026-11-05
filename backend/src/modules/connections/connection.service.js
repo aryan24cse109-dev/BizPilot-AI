@@ -164,15 +164,23 @@ export async function listMyConnections(userId, accountCategory) {
       ? { businessUserId: userId }
       : { clientUserId: userId };
 
-  return prisma.connection.findMany({
+    return prisma.connection.findMany({
     where,
     orderBy: { createdAt: "desc" },
     include: {
       businessUser: {
-        select: { id: true, username: true, fullName: true },
+        select: {
+          id: true,
+          username: true,
+          fullName: true,
+        },
       },
       clientUser: {
-        select: { id: true, username: true, fullName: true },
+        select: {
+          id: true,
+          username: true,
+          fullName: true,
+        },
       },
     },
   });
