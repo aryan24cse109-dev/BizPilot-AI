@@ -2,8 +2,7 @@
 import { aiService } from './ai.service.js';
 
 import {
-  validateAssistantRequest,
-  validateAssistantAIResponse
+  validateAssistantRequest
 } from '../schemas/assistant.schema.js';
 
 import {
@@ -13,18 +12,26 @@ import {
 
 import { parseAIJson } from '../utils/parseAIJson.js';
 
-import { analyzeAssistantRequest } from '../modules/assistant/analyzers/request.analyzer.js';
+import {
+  analyzeAssistantRequest
+} from '../modules/assistant/analyzers/request.analyzer.js';
 
 import {
-  CONFIRMATION_REQUIRED_ACTIONS,
+  validateAndNormalizeAssistantOutput,
+  AssistantOutputValidationError
+} from '../modules/assistant/output/response.validator.js';
+
+import {
+  applyConfidencePolicy
+} from '../modules/assistant/output/confidence.handler.js';
+
+import {
   HTTP_STATUS,
   ERROR_CODES
 } from '../utils/constants.js';
 
 import { ApiError } from '../utils/ApiError.js';
 import { logger } from '../utils/logger.js';
-
-const LOW_CONFIDENCE_THRESHOLD = 0.65;
 
 const createValidationError = (details) =>
   new ApiError({
@@ -34,53 +41,14 @@ const createValidationError = (details) =>
     details
   });
 
-const createInvalidAIResponseError = () =>
+const createInvalidAIResponseError = (error) =>
   new ApiError({
     statusCode: HTTP_STATUS.BAD_GATEWAY,
     message: 'AI provider returned an invalid assistant response.',
-    code: ERROR_CODES.AI_RESPONSE_INVALID
+    code: ERROR_CODES.AI_RESPONSE_INVALID,
+    details: error?.details ?? null,
+    cause: error
   });
-
-const normalizeAssistantResponse = (result) => {
-  const parsed = validateAssistantAIResponse(result);
-
-  if (!parsed.success) {
-    throw createInvalidAIResponseError();
-  }
-
-  const response = parsed.data;
-
-  if (response.workflow) {
-    if (response.intent !== response.workflow.action) {
-      throw createInvalidAIResponseError();
-    }
-
-    // The server, not the AI model, decides which actions require confirmation.
-    response.workflow.requiresConfirmation =
-      CONFIRMATION_REQUIRED_ACTIONS.includes(
-        response.workflow.action
-      );
-  }
-
-  if (response.confidence < LOW_CONFIDENCE_THRESHOLD) {
-    response.type = 'clarification';
-    response.workflow = null;
-
-    response.clarificationQuestion =
-      response.clarificationQuestion ||
-      'Could you provide a little more detail so I can understand your request?';
-  }
-
-  if (response.type !== 'workflow') {
-    response.workflow = null;
-  }
-
-  if (response.type !== 'clarification') {
-    response.clarificationQuestion = null;
-  }
-
-  return response;
-};
 
 const buildLanguageAndIntentContext = (analysis) => {
   const languageNames = {
@@ -100,12 +68,13 @@ const buildLanguageAndIntentContext = (analysis) => {
     '',
     'INSTRUCTIONS:',
     '1. Understand the original user message in its detected language.',
-    '2. Respond in the same language as the user unless another language is requested.',
-    '3. Treat the detected intent as a hint, not as a final decision.',
+    '2. Respond in the same language unless another language is requested.',
+    '3. Treat detected intent as a hint, not a final decision.',
     '4. Do not force the detected intent if the actual message means something different.',
     '5. Use conversation history to understand follow-up requests.',
-    '6. If the request is ambiguous, return a clarification response.',
-    '7. Never treat language or intent detection as authorization to execute an action.'
+    '6. Return a clarification response when the request is ambiguous.',
+    '7. Never treat language or intent detection as authorization to execute an action.',
+    '8. Return only a JSON object matching the required response schema.'
   ].join('\n');
 };
 
@@ -115,7 +84,7 @@ export const createAssistantService = ({
   requestAnalyzer = analyzeAssistantRequest
 } = {}) => {
   const interpretMessage = async (input) => {
-    // 1. Validate incoming request.
+    // 1. Validate the incoming request.
     const validation = validateAssistantRequest(input);
 
     if (!validation.success) {
@@ -127,15 +96,18 @@ export const createAssistantService = ({
       );
     }
 
-    const { message, conversationHistory = [] } = validation.data;
+    const {
+      message,
+      conversationHistory = []
+    } = validation.data;
 
-    // 2. Detect language, intent and follow-up context.
+    // 2. Analyze language, intent and conversation context.
     const requestAnalysis = requestAnalyzer({
       message,
       history: conversationHistory
     });
 
-    // 3. Build AI messages with language and intent context.
+    // 3. Construct AI messages.
     const messages = [
       {
         role: 'system',
@@ -154,31 +126,46 @@ export const createAssistantService = ({
       }
     ];
 
-    // 4. Generate AI response using Sarvam primary and Groq fallback.
+    // 4. Generate a response using Sarvam primary and Groq fallback.
     const aiResult = await aiServiceImpl.generateChatCompletion({
       messages,
       temperature: 0.1,
       maxTokens: 1200
     });
 
-    // 5. Parse AI response.
+    // 5. Extract and parse JSON.
     const parsedResult = parseAIJson(aiResult.content);
 
-    // 6. Validate and normalize AI response.
-    const assistantResponse =
-      normalizeAssistantResponse(parsedResult);
+    // 6. Validate schema and cross-field consistency.
+    let validatedResponse;
 
-    // 7. Log sanitized interpretation details.
+    try {
+      validatedResponse =
+        validateAndNormalizeAssistantOutput(parsedResult);
+    } catch (error) {
+      if (error instanceof AssistantOutputValidationError) {
+        throw createInvalidAIResponseError(error);
+      }
+
+      throw error;
+    }
+
+    // 7. Apply server-side confidence policy.
+    const assistantResponse =
+      applyConfidencePolicy(validatedResponse);
+
+    // 8. Log sanitized response metadata.
     loggerImpl.info('Assistant request interpreted successfully', {
       provider: aiResult.provider,
       detectedLanguage: requestAnalysis.language,
       detectedIntent: requestAnalysis.intent,
       finalIntent: assistantResponse.intent,
       responseType: assistantResponse.type,
+      confidence: assistantResponse.confidence,
       isFollowUp: requestAnalysis.isFollowUp
     });
 
-    // 8. Return assistant response and Stage 6 analysis.
+    // 9. Return the normalized response.
     return {
       ...assistantResponse,
 
