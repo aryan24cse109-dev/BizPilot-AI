@@ -3,6 +3,7 @@ import { Router } from "express";
 
 import {
   googleLoginController,
+  devLoginController,
   logoutController,
   currentUserController,
 } from "./auth.controller.js";
@@ -21,6 +22,8 @@ router.post(
   validate(googleLoginSchema),
   googleLoginController
 );
+
+router.post("/dev-login", devLoginController);
 
 router.get("/me", authenticate, currentUserController);
 

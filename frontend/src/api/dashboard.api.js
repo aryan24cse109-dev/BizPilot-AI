@@ -1,7 +1,10 @@
 import api from './client.js';
 
 export const dashboardApi = {
-  getBusinessDashboard: (params) => api.get('/dashboard/business', { params }),
-  getClientDashboard: () => api.get('/dashboard/client'),
-  getBusinessIntelligence: () => api.get('/dashboard/analytics'),
+  getDashboard: (params) => api.get('/dashboard', { params }),
+  getDashboardInvoices: (params) => api.get('/dashboard/invoices', { params }),
+  getDashboardTransactions: (params) => api.get('/dashboard/transactions', { params }),
+  getBusinessDashboard: (params) => api.get('/dashboard', { params }),
+  getClientDashboard: (params) => api.get('/dashboard', { params }),
+  getBusinessIntelligence: (params) => api.get('/dashboard', { params }),
 };

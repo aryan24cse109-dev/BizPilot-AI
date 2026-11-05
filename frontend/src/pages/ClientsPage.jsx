@@ -42,7 +42,12 @@ export const ClientsPage = () => {
     setLoading(true);
     try {
       const res = await clientsApi.getConnections();
-      if (res.success) setConnections(res.data);
+      const list = res?.data?.connections || res?.connections || [];
+      const accepted = list.filter((c) => c.status === 'ACTIVE');
+      const pendingIncoming = list.filter((c) => c.status === 'PENDING' && c.clientUserId === user?.id);
+      const pendingOutgoing = list.filter((c) => c.status === 'PENDING' && c.businessUserId === user?.id);
+
+      setConnections({ accepted, pendingIncoming, pendingOutgoing });
     } catch (err) {
       console.error('Error fetching connections:', err);
       toast.error('Network Error', err.message);
@@ -53,31 +58,43 @@ export const ClientsPage = () => {
 
   useEffect(() => {
     fetchConnections();
-  }, []);
+  }, [user?.id]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
     setSearching(true);
     try {
-      const res = await clientsApi.searchUsers(searchQuery);
-      if (res.success) setSearchResults(res.data);
+      if (searchQuery.includes('@')) {
+        await clientsApi.sendInvitation(searchQuery.trim());
+        toast.success('Invitation Sent', `Email invite sent to ${searchQuery}`);
+        fetchConnections();
+      } else {
+        await clientsApi.createConnection(searchQuery.trim());
+        toast.success('Connection Request Sent', `Request dispatched to @${searchQuery}`);
+        fetchConnections();
+      }
+      setSearchQuery('');
     } catch (err) {
-      toast.error('Search Failed', err.message);
+      toast.error('Action Failed', err.message);
     } finally {
       setSearching(false);
     }
   };
 
-  const handleSendRequest = async (userId) => {
-    setActionLoadingId(userId);
+  const handleSendRequest = async (usernameOrEmail) => {
+    setActionLoadingId(usernameOrEmail);
     try {
-      await clientsApi.sendConnectRequest({ receiverId: userId });
-      toast.success('Connection Request Sent', 'Waiting for recipient approval.');
+      if (usernameOrEmail.includes('@')) {
+        await clientsApi.sendInvitation(usernameOrEmail);
+        toast.success('Invitation Sent', `Invite sent to ${usernameOrEmail}`);
+      } else {
+        await clientsApi.createConnection(usernameOrEmail);
+        toast.success('Connection Request Sent', `Request dispatched to @${usernameOrEmail}`);
+      }
       fetchConnections();
-      handleSearch({ preventDefault: () => {} });
     } catch (err) {
-      toast.error('Failed to Send Request', err.message);
+      toast.error('Failed to Connect', err.message);
     } finally {
       setActionLoadingId(null);
     }
@@ -86,7 +103,7 @@ export const ClientsPage = () => {
   const handleRespond = async (connectionId, accept) => {
     setActionLoadingId(connectionId);
     try {
-      await clientsApi.respondConnection(connectionId, accept);
+      await clientsApi.respondConnection(connectionId, accept ? 'ACCEPT' : 'REJECT');
       toast.success(accept ? 'Connection Accepted!' : 'Request Declined');
       fetchConnections();
     } catch (err) {

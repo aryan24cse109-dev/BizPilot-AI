@@ -69,35 +69,48 @@ export const ClientInvoiceDetailsPage = () => {
   const handleInitiatePayment = async () => {
     setPaymentProcessing(true);
     try {
-      const orderRes = await paymentsApi.createOrder({
-        invoiceId: invoice.id,
-        provider: paymentProvider,
+      const idempotencyKey = `idemp_${invoice.id}_${Date.now()}`;
+      const orderRes = await paymentsApi.createOrder(invoice.id, {
         amount: Number(paymentAmount),
+        idempotencyKey,
       });
 
-      if (!orderRes.success) throw new Error(orderRes.message || 'Failed to initialize payment order');
-
-      const { orderId, amount, currency } = orderRes.data;
-
-      const fakePaymentId = `pay_sbx_${Date.now()}`;
-      const verifyRes = await paymentsApi.verifyPayment({
-        invoiceId: invoice.id,
-        provider: paymentProvider,
-        providerOrderId: orderId,
-        providerPaymentId: fakePaymentId,
-        signature: 'sandbox_sig_valid',
-        amount: Number(amount),
-        currency,
-        paymentMethod: paymentTab === 'upi' ? 'UPI' : paymentTab === 'card' ? 'CARD' : 'NETBANKING',
-      });
-
-      if (verifyRes.success) {
-        setPaymentSuccessData(verifyRes.data);
-        toast.success(
-          'Payment Verified Successfully!',
-          `Payment of ₹${Number(amount).toLocaleString('en-IN')} recorded.`
+      const orderData = orderRes?.data || orderRes;
+      if (orderData?.keyId && orderData?.orderId && window.Razorpay) {
+        const options = {
+          key: orderData.keyId,
+          amount: Math.round(Number(paymentAmount) * 100),
+          currency: invoice.currency || 'INR',
+          name: invoice.businessUser?.businessProfile?.businessName || 'BizPilot AI Business',
+          description: `Payment for Invoice ${invoice.invoiceNumber}`,
+          order_id: orderData.orderId,
+          handler: async (response) => {
+            try {
+              const verifyRes = await paymentsApi.verifyPayment({
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              });
+              setPaymentSuccessData(verifyRes?.data || verifyRes);
+              toast.success('Payment Verified Successfully!');
+              fetchInvoice();
+            } catch (vErr) {
+              toast.error('Payment Verification Failed', vErr.message);
+            }
+          },
+          prefill: {
+            name: user?.fullName || 'Client User',
+            email: user?.email || '',
+          },
+          theme: { color: '#17A673' },
+        };
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } else {
+        toast.info(
+          'Payment Order Prepared',
+          `Order ${orderData?.orderId || 'created'} registered with gateway.`
         );
-        fetchInvoice();
       }
     } catch (err) {
       toast.error('Payment Error', err.message || 'Payment processing failed.');

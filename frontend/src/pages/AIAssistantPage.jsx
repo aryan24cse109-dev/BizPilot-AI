@@ -142,38 +142,68 @@ export const AIAssistantPage = () => {
     setLoading(true);
 
     try {
-      const res = await aiApi.chat({
-        message: textToSend,
-        conversationId,
-        language: 'hinglish',
-      });
+      const historyPayload = messages.map(m => ({
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: m.content || '',
+      })).slice(-8);
 
-      if (res.success && res.data) {
-        const { conversationId: newConvId, message, draft, actionLogId, toolResult, requiresConfirmation } = res.data;
-        if (newConvId) setConversationId(newConvId);
+      const res = await aiApi.sendMessage(textToSend, historyPayload);
+      const data = res?.data || res;
+
+      if (data) {
+        let content = '';
+        if (data.status === 'clarification_required') {
+          content = data.question || data.response || 'Please provide more details.';
+        } else if (data.status === 'confirmation_required') {
+          content = `⚠️ **Confirmation Required**: ${data.message || 'Please confirm before I proceed with this consequential action.'}`;
+        } else if (data.status === 'executed') {
+          if (data.operation === 'GET_DASHBOARD_SUMMARY') {
+            const m = data.result?.metrics?.financial || {};
+            content = `📊 **Dashboard Summary**\n• Total Invoiced: ₹${Number(m.totalInvoicedAmount || 0).toLocaleString('en-IN')}\n• Total Collected: ₹${Number(m.totalCapturedAmount || 0).toLocaleString('en-IN')}\n• Outstanding Balance: ₹${Number(m.totalOutstandingAmount || 0).toLocaleString('en-IN')}`;
+          } else if (data.operation === 'CREATE_INVOICE_DRAFT') {
+            content = `✅ **Invoice Draft Created!**\nInvoice **${data.result?.invoiceNumber}** for ₹${Number(data.result?.totalAmount || 0).toLocaleString('en-IN')} has been generated in your account.`;
+          } else if (data.operation === 'SEND_INVOICE') {
+            content = `📧 **Invoice Sent!** Invoice has been dispatched to the client.`;
+          } else if (data.operation === 'CANCEL_INVOICE') {
+            content = `🚫 **Invoice Cancelled!** The invoice was cancelled.`;
+          } else if (data.operation === 'GET_PAYMENT_HISTORY') {
+            const count = data.result?.payments?.length || 0;
+            content = `💳 **Payment History**: Found ${count} payment records.`;
+          } else {
+            content = `✅ Action **${data.operation}** completed successfully.`;
+          }
+        } else {
+          content = data.response || data.aiResponse?.response || 'I am ready to help you manage your business.';
+        }
 
         const aiMsg = {
           id: `ai_${Date.now()}`,
           role: 'assistant',
-          content: message,
-          draft,
-          actionLogId,
-          toolResult,
-          requiresConfirmation,
+          content,
+          status: data.status,
+          operation: data.operation,
+          input: data.input,
+          result: data.result,
           createdAt: new Date().toISOString(),
         };
 
         setMessages((prev) => [...prev, aiMsg]);
 
-        if (requiresConfirmation && draft && actionLogId) {
+        if (data.status === 'confirmation_required') {
+          const draftParams = data.input || {};
           const formattedDraft = {
-            ...draft,
-            actionLogId,
-            items: draft.items && draft.items.length > 0 
-              ? draft.items.map(it => ({ ...it, quantity: Number(it.quantity) || 1, unitPrice: Number(it.unitPrice) || Number(draft.amount || 0) }))
-              : [{ description: draft.description || 'Professional Services', quantity: 1, unitPrice: Number(draft.amount || 15000) }],
-            dueDate: draft.dueDate || new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+            operation: data.operation,
+            input: draftParams,
+            clientName: draftParams.clientName || 'Rahul Sharma',
+            clientEmail: draftParams.clientEmail || 'rahul@rahulenterprises.com',
+            items: draftParams.items && draftParams.items.length > 0 
+              ? draftParams.items.map(it => ({ ...it, quantity: Number(it.quantity) || 1, unitPrice: Number(it.unitPrice) || Number(it.price || 15000) }))
+              : [{ description: draftParams.description || 'Professional Services', quantity: 1, unitPrice: Number(draftParams.amount || 15000) }],
+            dueDate: draftParams.dueDate || new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
             taxRate: 18,
+            subtotal: Number(draftParams.amount || 15000),
+            taxAmount: (Number(draftParams.amount || 15000) * 0.18),
+            totalAmount: (Number(draftParams.amount || 15000) * 1.18),
           };
           setActiveDraft(formattedDraft);
           setEditedDraft(JSON.parse(JSON.stringify(formattedDraft)));
@@ -249,50 +279,48 @@ export const AIAssistantPage = () => {
     });
   };
 
-  // User confirms the invoice draft
+  // User confirms the invoice draft or consequential workflow
   const handleConfirmDraft = async (confirmed) => {
-    if (!activeDraft?.actionLogId) return;
+    if (!activeDraft?.operation) return;
     setExecutingAction(true);
 
     try {
       const draftData = isEditingDraft && editedDraft ? editedDraft : activeDraft;
-      const overrides = confirmed ? {
-        items: draftData.items,
-        dueDate: draftData.dueDate,
-        taxRate: Number(draftData.taxRate || 18),
-      } : {};
-
-      const res = await aiApi.execute({
-        actionLogId: activeDraft.actionLogId,
-        confirmed,
-        overrides,
-      });
-
-      if (res.success) {
-        if (confirmed) {
-          toast.success(
-            'Invoice Created & Sent',
-            `Invoice ${res.data.invoice?.invoiceNumber} for ₹${Number(draftData.totalAmount || res.data.invoice?.totalAmount).toLocaleString('en-IN')} has been persisted.`
-          );
-        } else {
-          toast.info('Draft Discarded', `The draft for ${activeDraft.clientName} was cancelled.`);
-        }
-
+      if (confirmed) {
+        const inputData = {
+          ...(activeDraft.input || {}),
+          items: draftData.items,
+          dueDate: draftData.dueDate,
+        };
+        const res = await aiApi.executeWorkflow(activeDraft.operation, inputData, true);
+        toast.success(
+          'Action Executed',
+          `Operation ${activeDraft.operation} completed successfully.`
+        );
         setMessages((prev) => [
           ...prev,
           {
             id: `exec_${Date.now()}`,
             role: 'assistant',
-            content: confirmed
-              ? `✅ **Success!** Invoice **${res.data.invoice?.invoiceNumber}** for ₹${Number(draftData.totalAmount || res.data.invoice?.totalAmount).toLocaleString('en-IN')} has been created in PostgreSQL and dispatched to **${draftData.clientName}**.`
-              : `❌ The invoice draft for **${activeDraft.clientName}** was discarded per your instruction.`,
+            content: `✅ **Confirmed & Executed**: ${activeDraft.operation} has been successfully applied to your database.`,
             createdAt: new Date().toISOString(),
           }
         ]);
-        setActiveDraft(null);
-        setEditedDraft(null);
-        setIsEditingDraft(false);
+      } else {
+        toast.info('Action Discarded', `The action was cancelled per your instruction.`);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `exec_${Date.now()}`,
+            role: 'assistant',
+            content: `❌ The requested action was discarded.`,
+            createdAt: new Date().toISOString(),
+          }
+        ]);
       }
+      setActiveDraft(null);
+      setEditedDraft(null);
+      setIsEditingDraft(false);
     } catch (err) {
       console.error('Action execution failed:', err);
       toast.error('Execution Failed', err.message || 'Failed to execute action.');

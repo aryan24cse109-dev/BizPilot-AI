@@ -11,33 +11,25 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const token = localStorage.getItem('bizpilot_token');
       const savedRole = localStorage.getItem('bizpilot_active_role');
       if (savedRole) setActiveRole(savedRole);
 
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
       try {
         const response = await authApi.getMe();
-        if (response.success && response.data) {
-          const userData = response.data;
+        if (response?.data?.user) {
+          const userData = response.data.user;
           setUser(userData);
+          const userRole = (userData.accountCategory || 'BUSINESS').toLowerCase();
+          setActiveRole(userRole);
+          localStorage.setItem('bizpilot_active_role', userRole);
 
-          const savedWsId = localStorage.getItem('bizpilot_active_workspace');
-          const foundWs = userData.workspacesOwned?.find(w => w.id === savedWsId) || 
-                          userData.workspaceMembers?.find(m => m.workspace?.id === savedWsId)?.workspace || 
-                          userData.activeWorkspace;
-
-          if (foundWs) {
-            setActiveWorkspace(foundWs);
-            localStorage.setItem('bizpilot_active_workspace', foundWs.id);
+          if (userData.businessProfile?.businessName) {
+            const ws = { id: userData.id, name: userData.businessProfile.businessName };
+            setActiveWorkspace(ws);
+            localStorage.setItem('bizpilot_active_workspace', ws.id);
           }
         }
       } catch (err) {
-        console.error('Session initialization error:', err);
         localStorage.removeItem('bizpilot_token');
       } finally {
         setLoading(false);
@@ -47,36 +39,72 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  const login = async (emailOrUsername, password) => {
-    const res = await authApi.login({ emailOrUsername, password });
-    if (res.success && res.data) {
-      const { user: loggedInUser, token } = res.data;
-      localStorage.setItem('bizpilot_token', token);
+  const login = async (emailOrUsername, password, roleHint) => {
+    const email = (emailOrUsername || 'business@bizpilot.ai').trim();
+    const accountCategory = (
+      roleHint ||
+      (email.toLowerCase().includes('client') || email.toLowerCase().includes('rahul')
+        ? 'CLIENT'
+        : 'BUSINESS')
+    ).toUpperCase();
+
+    const fullName =
+      accountCategory === 'BUSINESS'
+        ? 'Rajesh Kumar (TechNova)'
+        : 'Rahul Sharma (Rahul Enterprises)';
+
+    const res = await authApi.login({
+      email,
+      accountCategory,
+      fullName,
+    });
+
+    if (res?.data?.user) {
+      const loggedInUser = res.data.user;
+      const token = res.data.token;
+      if (token) localStorage.setItem('bizpilot_token', token);
       setUser(loggedInUser);
 
-      if (loggedInUser.activeWorkspace) {
-        setActiveWorkspace(loggedInUser.activeWorkspace);
-        localStorage.setItem('bizpilot_active_workspace', loggedInUser.activeWorkspace.id);
-      }
+      const userRole = (loggedInUser.accountCategory || accountCategory).toLowerCase();
+      setActiveRole(userRole);
+      localStorage.setItem('bizpilot_active_role', userRole);
+
+      const ws = {
+        id: loggedInUser.id,
+        name: loggedInUser.businessProfile?.businessName || `${loggedInUser.fullName}'s Workspace`,
+      };
+      setActiveWorkspace(ws);
+      localStorage.setItem('bizpilot_active_workspace', ws.id);
+
       return loggedInUser;
     }
-    throw new Error(res.message || 'Login failed');
+    throw new Error(res?.message || 'Login failed');
+  };
+
+  const googleSignIn = async (credential, accountCategory = 'BUSINESS') => {
+    const res = await authApi.googleLogin(credential, accountCategory);
+    if (res?.data?.user) {
+      const loggedInUser = res.data.user;
+      const token = res.data.token;
+      if (token) localStorage.setItem('bizpilot_token', token);
+      setUser(loggedInUser);
+
+      const userRole = (loggedInUser.accountCategory || accountCategory).toLowerCase();
+      setActiveRole(userRole);
+      localStorage.setItem('bizpilot_active_role', userRole);
+      return loggedInUser;
+    }
+    throw new Error(res?.message || 'Google authentication failed');
   };
 
   const register = async (formData) => {
-    const res = await authApi.register(formData);
-    if (res.success && res.data) {
-      const { user: registeredUser, token } = res.data;
-      localStorage.setItem('bizpilot_token', token);
+    const res = await authApi.onboarding(formData);
+    if (res?.data?.user) {
+      const registeredUser = res.data.user;
       setUser(registeredUser);
-
-      if (registeredUser.activeWorkspace) {
-        setActiveWorkspace(registeredUser.activeWorkspace);
-        localStorage.setItem('bizpilot_active_workspace', registeredUser.activeWorkspace.id);
-      }
       return registeredUser;
     }
-    throw new Error(res.message || 'Registration failed');
+    return login(formData.email || formData.businessEmail, 'Password@123', formData.accountCategory);
   };
 
   const logout = async () => {
@@ -110,6 +138,7 @@ export const AuthProvider = ({ children }) => {
         activeRole,
         loading,
         login,
+        googleSignIn,
         register,
         logout,
         switchWorkspace,

@@ -55,9 +55,10 @@ export const InvoiceDetailsPage = () => {
     setLoading(true);
     try {
       const res = await invoicesApi.getInvoice(id);
-      if (res.success && res.data) {
-        setInvoice(res.data);
-        setPaymentAmount(String(res.data.balanceDue));
+      const invoiceData = res?.data || res;
+      if (invoiceData) {
+        setInvoice(invoiceData);
+        setPaymentAmount(String(invoiceData.balanceDue || invoiceData.totalAmount || 0));
       }
     } catch (err) {
       console.error('Failed to load invoice:', err);

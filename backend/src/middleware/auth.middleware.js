@@ -8,7 +8,10 @@ import { createTokenHash } from "../modules/auth/auth.service.js";
 
 export async function authenticate(req, res, next) {
   try {
-    const token = req.cookies?.[env.SESSION_COOKIE_NAME];
+    let token = req.cookies?.[env.SESSION_COOKIE_NAME];
+    if (!token && req.headers.authorization?.startsWith("Bearer ")) {
+      token = req.headers.authorization.slice(7).trim();
+    }
 
     if (!token) {
       throw new ApiError(401, "Authentication required.");

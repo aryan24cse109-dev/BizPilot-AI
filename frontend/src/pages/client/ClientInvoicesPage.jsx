@@ -29,9 +29,10 @@ export const ClientInvoicesPage = () => {
     try {
       const res = await invoicesApi.listClientInvoices({
         status: statusFilter === 'ALL' ? undefined : statusFilter,
-        search: searchQuery,
+        search: searchQuery || undefined,
       });
-      if (res.success) setInvoices(res.invoices || []);
+      const list = res?.data?.invoices || res?.invoices || [];
+      setInvoices(list);
     } catch (err) {
       console.error('Failed to load client invoices:', err);
     } finally {

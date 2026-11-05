@@ -144,6 +144,105 @@ export async function getAuthenticatedUser(userId) {
   });
 }
 
+export async function devLogin(email, accountCategory = "BUSINESS", fullName, requestInfo = {}) {
+  if (env.NODE_ENV === "production") {
+    throw new ApiError(403, "Dev login is not allowed in production.");
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+  let user = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+    include: { businessProfile: true, clientProfile: true },
+  });
+
+  if (!user) {
+    const usernameBase = normalizedEmail
+      .split("@")[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, "")
+      .slice(0, 35) || "user";
+    const username = `${usernameBase}_${crypto.randomBytes(3).toString("hex")}`;
+
+    user = await prisma.user.create({
+      data: {
+        email: normalizedEmail,
+        username,
+        fullName: fullName || normalizedEmail.split("@")[0],
+        emailVerifiedAt: new Date(),
+        accountCategory,
+        onboardingCompleted: true,
+      },
+    });
+
+    if (accountCategory === "BUSINESS") {
+      await prisma.businessProfile.create({
+        data: {
+          userId: user.id,
+          businessName: `${user.fullName}'s Business`,
+          businessType: "STARTUP",
+          currency: "INR",
+          country: "India",
+          city: "Bengaluru",
+          addressLine1: "100 Feet Road, Indiranagar",
+        },
+      });
+    } else {
+      await prisma.clientProfile.create({
+        data: {
+          userId: user.id,
+          phone: "+919876543210",
+          country: "India",
+          city: "Bengaluru",
+          billingAddress: "100 Feet Road, Indiranagar",
+        },
+      });
+    }
+  }
+
+  if (user.status !== "ACTIVE") {
+    throw new ApiError(403, "This account is not active.");
+  }
+
+  const sessionId = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + SESSION_SECONDS * 1000);
+
+  const token = jwt.sign(
+    {
+      sub: user.id,
+      sid: sessionId,
+    },
+    env.JWT_SECRET,
+    {
+      expiresIn: SESSION_SECONDS,
+      issuer: "bizpilot-ai",
+      audience: "bizpilot-ai-users",
+    }
+  );
+
+  await prisma.authSession.create({
+    data: {
+      id: sessionId,
+      userId: user.id,
+      tokenHash: hashToken(token),
+      expiresAt,
+      ipAddress: requestInfo.ip || null,
+      userAgent: requestInfo.userAgent || null,
+    },
+  });
+
+  return {
+    token,
+    user: {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      fullName: user.fullName,
+      accountCategory: user.accountCategory,
+      onboardingCompleted: user.onboardingCompleted,
+    },
+  };
+}
+
 export function createTokenHash(token) {
   return hashToken(token);
 }

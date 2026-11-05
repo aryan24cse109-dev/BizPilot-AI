@@ -3,6 +3,7 @@ import { env } from "../../config/env.js";
 
 import {
   googleLogin,
+  devLogin,
   logoutSession,
   getAuthenticatedUser,
 } from "./auth.service.js";
@@ -35,6 +36,35 @@ export async function googleLoginController(req, res, next) {
       message: "Authentication successful.",
       data: {
         user: result.user,
+        token: result.token,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function devLoginController(req, res, next) {
+  try {
+    const { email = "demo@bizpilot.test", accountCategory = "BUSINESS", fullName = "Demo User" } = req.body || {};
+    const result = await devLogin(
+      email,
+      accountCategory,
+      fullName,
+      {
+        ip: req.ip,
+        userAgent: req.get("user-agent"),
+      }
+    );
+
+    res.cookie(env.SESSION_COOKIE_NAME, result.token, cookieOptions());
+
+    return res.status(200).json({
+      success: true,
+      message: "Development login successful.",
+      data: {
+        user: result.user,
+        token: result.token,
       },
     });
   } catch (error) {

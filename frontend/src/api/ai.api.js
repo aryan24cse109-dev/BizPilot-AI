@@ -1,9 +1,20 @@
 import api from './client.js';
 
 export const aiApi = {
-  chat: (data) => api.post('/ai/chat', data),
-  execute: (data) => api.post('/ai/execute', data),
-  transcribeVoice: (data) => api.post('/ai/voice/transcribe', data),
-  listConversations: () => api.get('/ai/conversations'),
-  getConversation: (id) => api.get(`/ai/conversations/${id}`),
+  sendMessage: (message, conversationHistory = []) =>
+    api.post('/assistant/message', { message, conversationHistory }),
+  executeWorkflow: (operation, input, confirmed = false) =>
+    api.post('/assistant/workflows/execute', { operation, input, confirmed }),
+  // Aliases for compatibility
+  chat: (data) =>
+    api.post('/assistant/message', {
+      message: data.message || data.prompt,
+      conversationHistory: data.history || [],
+    }),
+  execute: (data) =>
+    api.post('/assistant/workflows/execute', {
+      operation: data.operation || data.action,
+      input: data.input || data.parameters || {},
+      confirmed: data.confirmed ?? true,
+    }),
 };

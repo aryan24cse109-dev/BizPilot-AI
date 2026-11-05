@@ -29,13 +29,9 @@ export const PaymentsPage = () => {
   const fetchPayments = async () => {
     setLoading(true);
     try {
-      if (activeRole === 'business') {
-        const res = await paymentsApi.getWorkspacePayments({ search });
-        if (res.success) setPayments(res.payments || []);
-      } else {
-        const res = await paymentsApi.getClientPayments({ search });
-        if (res.success) setPayments(res.payments || []);
-      }
+      const res = await paymentsApi.getPayments();
+      const list = res?.data?.payments || res?.payments || [];
+      setPayments(list);
     } catch (err) {
       console.error('Error fetching payments:', err);
       toast.error('Ledger Error', err.message);

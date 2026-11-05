@@ -1,8 +1,9 @@
 import api from './client.js';
 
 export const clientsApi = {
-  searchUsers: (q) => api.get('/clients/search', { params: { q } }),
-  getConnections: () => api.get('/clients/connections'),
-  sendConnectRequest: (data) => api.post('/clients/connect', data),
-  respondConnection: (id, accept) => api.post(`/clients/connections/${id}/respond`, { accept }),
+  getConnections: (params) => api.get('/connections', { params }),
+  createConnection: (username) => api.post('/connections', { username }),
+  respondConnection: (id, decision) => api.patch(`/connections/${id}/respond`, { decision }),
+  sendInvitation: (email) => api.post('/invitations', { email }),
+  acceptInvitation: (token) => api.post('/invitations/accept', { token }),
 };

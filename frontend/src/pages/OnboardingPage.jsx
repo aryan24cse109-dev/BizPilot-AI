@@ -18,16 +18,39 @@ export const OnboardingPage = () => {
   const [currency, setCurrency] = useState('INR');
   const [submitting, setSubmitting] = useState(false);
 
-  const handleComplete = (e) => {
+  const handleComplete = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setTimeout(() => {
+    try {
+      if (roleChoice === 'business') {
+        await authApi.onboarding({
+          accountCategory: 'BUSINESS',
+          businessType: businessStructure === 'Freelancer' ? 'FREELANCER' : businessStructure === 'Startup' ? 'STARTUP' : 'SMALL_BUSINESS',
+          businessName,
+          currency: currency || 'INR',
+          gstin: taxId || undefined,
+          country: 'India',
+        });
+      } else {
+        await authApi.onboarding({
+          accountCategory: 'CLIENT',
+          country: 'India',
+        });
+      }
+
       setActiveRole(roleChoice);
       localStorage.setItem('bizpilot_active_role', roleChoice);
       toast.success('Workspace Configured', `Welcome to BizPilot as a ${roleChoice === 'business' ? 'Business Owner' : 'Client'}!`);
-      setSubmitting(false);
       navigate(roleChoice === 'business' ? '/business' : '/portal');
-    }, 600);
+    } catch (err) {
+      console.error('Onboarding failed:', err);
+      // If already onboarded, continue
+      setActiveRole(roleChoice);
+      localStorage.setItem('bizpilot_active_role', roleChoice);
+      navigate(roleChoice === 'business' ? '/business' : '/portal');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

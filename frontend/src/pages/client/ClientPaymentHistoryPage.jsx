@@ -27,7 +27,8 @@ export const ClientPaymentHistoryPage = () => {
     setLoading(true);
     try {
       const res = await paymentsApi.getClientPayments({ search });
-      if (res.success) setPayments(res.payments || []);
+      const list = res?.data?.payments || res?.payments || [];
+      setPayments(list);
     } catch (err) {
       console.error('Failed to load client payment history:', err);
     } finally {

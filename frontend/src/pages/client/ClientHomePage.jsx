@@ -36,8 +36,9 @@ export const ClientHomePage = () => {
           dashboardApi.getClientDashboard(),
           invoicesApi.listClientInvoices({ limit: 5 }),
         ]);
-        if (dashRes.success) setDashboardData(dashRes.data);
-        if (invRes.success) setInvoices(invRes.invoices || []);
+        if (dashRes?.data) setDashboardData(dashRes.data);
+        const invList = invRes?.data?.invoices || invRes?.invoices || [];
+        setInvoices(invList);
       } catch (err) {
         console.error('Error loading client home data:', err);
       } finally {
@@ -51,8 +52,9 @@ export const ClientHomePage = () => {
   if (loading) return <LoadingSpinner size="lg" text="Loading client financial overview..." />;
 
   const metrics = dashboardData?.metrics || {};
-  const totalOutstanding = Number(metrics.totalPending || 0);
-  const totalPaid = Number(metrics.totalPaid || 0);
+  const financial = metrics.financial || {};
+  const totalOutstanding = Number(financial.totalOutstandingAmount || metrics.totalPending || 0);
+  const totalPaid = Number(financial.totalCapturedAmount || metrics.totalPaid || 0);
 
   return (
     <div className="space-y-6 pb-12">
