@@ -271,11 +271,10 @@ export const InvoicesPage = () => {
               <button
                 key={tab.value}
                 onClick={() => setStatusFilter(tab.value)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition ${
-                  isTabActive
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition ${isTabActive
                     ? 'bg-[#1C1D22] text-white shadow-xs'
                     : 'bg-[#FAF8F5] text-[#8E9297] hover:text-[#1C1D22] border border-[#E8E4DC]'
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -414,22 +413,20 @@ export const InvoicesPage = () => {
             <button
               type="button"
               onClick={() => setModalTab('edit')}
-              className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition ${
-                modalTab === 'edit'
+              className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition ${modalTab === 'edit'
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                   : 'text-slate-400 hover:text-white'
-              }`}
+                }`}
             >
               Invoice Editor
             </button>
             <button
               type="button"
               onClick={() => setModalTab('preview')}
-              className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5 ${
-                modalTab === 'preview'
+              className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5 ${modalTab === 'preview'
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                   : 'text-slate-400 hover:text-white'
-              }`}
+                }`}
             >
               <Eye className="w-3.5 h-3.5" /> Live Preview
             </button>

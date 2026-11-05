@@ -196,7 +196,7 @@ export const AIAssistantPage = () => {
             input: draftParams,
             clientName: draftParams.clientName || 'Rahul Sharma',
             clientEmail: draftParams.clientEmail || 'rahul@rahulenterprises.com',
-            items: draftParams.items && draftParams.items.length > 0 
+            items: draftParams.items && draftParams.items.length > 0
               ? draftParams.items.map(it => ({ ...it, quantity: Number(it.quantity) || 1, unitPrice: Number(it.unitPrice) || Number(it.price || 15000) }))
               : [{ description: draftParams.description || 'Professional Services', quantity: 1, unitPrice: Number(draftParams.amount || 15000) }],
             dueDate: draftParams.dueDate || new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
@@ -337,8 +337,8 @@ export const AIAssistantPage = () => {
     { label: 'Cloud Architecture Invoice', text: 'Create ₹45,000 invoice for Rahul for Cloud Architecture & Security Audit', cat: 'billing' },
   ];
 
-  const filteredPresets = activeCategory === 'all' 
-    ? presetPrompts 
+  const filteredPresets = activeCategory === 'all'
+    ? presetPrompts
     : presetPrompts.filter(p => p.cat === activeCategory);
 
   const displayDraft = isEditingDraft && editedDraft ? editedDraft : activeDraft;
@@ -395,28 +395,25 @@ export const AIAssistantPage = () => {
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex gap-3 max-w-3xl ${
-              msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''
-            }`}
+            className={`flex gap-3 max-w-3xl ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''
+              }`}
           >
             {/* Avatar */}
             <div
-              className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-xs font-bold ${
-                msg.role === 'user'
+              className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-xs font-bold ${msg.role === 'user'
                   ? 'bg-[#1C1D22] text-white'
                   : 'bg-[#CFDDC8] text-[#1A3018]'
-              }`}
+                }`}
             >
               {msg.role === 'user' ? (user?.name?.slice(0, 1) || 'U') : <Sparkles className="w-4 h-4" />}
             </div>
 
             {/* Bubble */}
             <div
-              className={`rounded-2xl p-4 text-xs md:text-sm leading-relaxed ${
-                msg.role === 'user'
+              className={`rounded-2xl p-4 text-xs md:text-sm leading-relaxed ${msg.role === 'user'
                   ? 'bg-[#1C1D22] text-white rounded-tr-none shadow-xs'
                   : 'bg-white border border-[#E8E4DC] text-[#1C1D22] rounded-tl-none shadow-xs'
-              }`}
+                }`}
             >
               <div className="whitespace-pre-wrap font-sans">
                 {msg.content}
@@ -455,11 +452,10 @@ export const AIAssistantPage = () => {
                 <button
                   type="button"
                   onClick={() => setIsEditingDraft(!isEditingDraft)}
-                  className={`text-xs px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition ${
-                    isEditingDraft
+                  className={`text-xs px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition ${isEditingDraft
                       ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 font-bold'
                       : 'bg-charcoal-800 border-slate-700 text-slate-300 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   {isEditingDraft ? 'Done Editing' : 'Edit Values'}
@@ -643,11 +639,10 @@ export const AIAssistantPage = () => {
           <button
             type="button"
             onClick={isRecording ? stopRecording : startRecording}
-            className={`p-3 rounded-xl border transition flex items-center justify-center shrink-0 ${
-              isRecording
+            className={`p-3 rounded-xl border transition flex items-center justify-center shrink-0 ${isRecording
                 ? 'bg-rose-500 text-white border-rose-400 animate-pulse shadow-lg shadow-rose-500/40'
                 : 'bg-charcoal-800 hover:bg-charcoal-700 text-slate-300 border-slate-700/60'
-            }`}
+              }`}
             title={isRecording ? 'Click to stop voice recording' : 'Click to speak in Hindi/English'}
           >
             {isRecording ? <MicOff className="w-5 h-5 text-white" /> : <Mic className="w-5 h-5 text-emerald-400" />}
