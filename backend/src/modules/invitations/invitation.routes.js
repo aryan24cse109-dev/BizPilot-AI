@@ -18,11 +18,18 @@ import {
 import {
   createInvitationController,
   acceptInvitationController,
+  listInvitationsController,
 } from "./invitation.controller.js";
 
 const router = Router();
 
 router.use(authenticate, requireOnboarding);
+
+router.get(
+  "/",
+  authorize("BUSINESS"),
+  listInvitationsController
+);
 
 router.post(
   "/",

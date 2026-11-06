@@ -16,7 +16,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:status": "prisma migrate status",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:empty": "node --env-file=.env scripts/empty-db.js"
   },
   "repository": {
     "type": "git",

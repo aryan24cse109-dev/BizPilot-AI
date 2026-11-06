@@ -2,7 +2,20 @@
 import {
   createClientInvitation,
   acceptClientInvitation,
+  listMyInvitations,
 } from "./invitation.service.js";
+
+export async function listInvitationsController(req, res, next) {
+  try {
+    const invitations = await listMyInvitations(req.user.id);
+    return res.status(200).json({
+      success: true,
+      data: { invitations },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
 
 export async function createInvitationController(req, res, next) {
   try {

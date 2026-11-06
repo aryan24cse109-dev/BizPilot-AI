@@ -27,8 +27,10 @@ export async function createClientInvitation(businessUserId, email) {
     throw new ApiError(403, "A completed business account is required.");
   }
 
+  const normalizedEmail = email.toLowerCase().trim();
+
   const existingUser = await prisma.user.findUnique({
-    where: { email },
+    where: { email: normalizedEmail },
     select: {
       id: true,
       accountCategory: true,
@@ -36,39 +38,61 @@ export async function createClientInvitation(businessUserId, email) {
   });
 
   if (existingUser) {
-    if (existingUser.accountCategory === "CLIENT") {
-      throw new ApiError(
-        409,
-        "This client is already registered. Send a connection request using their username."
-      );
-    }
+    // If client is already registered, connect them immediately so they are in the client directory
+    const connection = await prisma.connection.upsert({
+      where: {
+        businessUserId_clientUserId: {
+          businessUserId,
+          clientUserId: existingUser.id,
+        },
+      },
+      update: { status: "ACTIVE", acceptedAt: new Date() },
+      create: {
+        businessUserId,
+        clientUserId: existingUser.id,
+        status: "ACTIVE",
+        acceptedAt: new Date(),
+      },
+    });
 
-    throw new ApiError(409, "This email belongs to an existing business account.");
+    return {
+      id: connection.id,
+      email: normalizedEmail,
+      status: "ACTIVE",
+      delivery: { delivered: true },
+      connected: true,
+    };
   }
 
   const existingInvitation = await prisma.invitation.findFirst({
     where: {
       businessUserId,
-      email,
+      email: normalizedEmail,
       status: "PENDING",
       expiresAt: { gt: new Date() },
     },
   });
 
   if (existingInvitation) {
-    throw new ApiError(409, "An active invitation already exists for this email.");
+    return {
+      id: existingInvitation.id,
+      email: normalizedEmail,
+      status: existingInvitation.status,
+      expiresAt: existingInvitation.expiresAt,
+      delivery: { delivered: true },
+    };
   }
 
   const rawToken = crypto.randomBytes(32).toString("hex");
   const tokenHash = hashToken(rawToken);
 
   const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7);
+  expiresAt.setDate(expiresAt.getDate() + 30);
 
   const invitation = await prisma.invitation.create({
     data: {
       businessUserId,
-      email,
+      email: normalizedEmail,
       tokenHash,
       expiresAt,
     },
@@ -203,5 +227,23 @@ export async function acceptClientInvitation(clientUser, rawToken) {
       connectionId: connection.id,
       status: "ACTIVE",
     };
+  });
+}
+
+export async function listMyInvitations(businessUserId) {
+  return prisma.invitation.findMany({
+    where: { businessUserId },
+    orderBy: { createdAt: "desc" },
+    include: {
+      acceptedByUser: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          username: true,
+          clientProfile: true,
+        },
+      },
+    },
   });
 }
