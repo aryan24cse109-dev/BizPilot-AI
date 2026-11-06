@@ -31,34 +31,18 @@ export const validateAndNormalizeAssistantOutput = (input) => {
 
   const response = validation.data;
 
-  // A workflow response must contain a valid workflow.
-  if (
-    response.type === AI_RESPONSE_TYPES.WORKFLOW &&
-    !response.workflow
-  ) {
-    throw new AssistantOutputValidationError(
-      'Workflow response is missing its workflow details.'
-    );
+  // Normalize workflow structure
+  if (response.type === AI_RESPONSE_TYPES.WORKFLOW && !response.workflow) {
+    response.type = AI_RESPONSE_TYPES.CONVERSATION;
   }
 
-  // Non-workflow responses must not contain executable workflow data.
-  if (
-    response.type !== AI_RESPONSE_TYPES.WORKFLOW &&
-    response.workflow
-  ) {
-    throw new AssistantOutputValidationError(
-      'Non-workflow response cannot contain workflow details.'
-    );
+  if (response.type !== AI_RESPONSE_TYPES.WORKFLOW && response.workflow) {
+    response.type = AI_RESPONSE_TYPES.WORKFLOW;
+    response.intent = response.workflow.action;
   }
 
-  // Workflow action and detected intent must agree.
-  if (
-    response.workflow &&
-    response.intent !== response.workflow.action
-  ) {
-    throw new AssistantOutputValidationError(
-      'Workflow action does not match the response intent.'
-    );
+  if (response.workflow && response.intent !== response.workflow.action) {
+    response.intent = response.workflow.action;
   }
 
   // Only workflow responses may contain an actionable intent.

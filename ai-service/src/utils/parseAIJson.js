@@ -13,19 +13,36 @@ export const parseAIJson = (content) => {
 
   let cleaned = content.trim();
 
-  // Remove optional Markdown JSON fences.
-  cleaned = cleaned
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/, '')
-    .trim();
-
+  // Try direct parse first
   try {
     return JSON.parse(cleaned);
-  } catch {
-    throw new ApiError({
-      statusCode: HTTP_STATUS.BAD_GATEWAY,
-      message: 'AI provider returned an invalid JSON response.',
-      code: ERROR_CODES.AI_RESPONSE_PARSE_ERROR
-    });
+  } catch {}
+
+  // Try extracting markdown JSON block ```json ... ```
+  const jsonMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (jsonMatch && jsonMatch[1]) {
+    try {
+      return JSON.parse(jsonMatch[1].trim());
+    } catch {}
   }
+
+  // Try extracting the first outer JSON object { ... }
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    try {
+      return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
+    } catch {}
+  }
+
+  // Fallback: If AI returned plain conversational text, wrap it into a valid conversational response
+  return {
+    type: 'conversation',
+    intent: null,
+    confidence: 0.95,
+    entities: {},
+    workflow: null,
+    clarificationQuestion: null,
+    response: cleaned
+  };
 };

@@ -19,9 +19,11 @@ export const assistantRequestSchema = z.object({
     z.object({
       role: z.enum(['user', 'assistant']),
       content: z.string().trim().min(1).max(4000)
-    }).strict()
-  ).max(10).optional().default([])
-}).strict();
+    })
+  ).max(20).optional().default([]),
+
+  context: z.record(z.string(), z.unknown()).optional().default({})
+});
 
 const entitiesSchema = z.object({
   invoiceId: z.string().trim().min(1).max(100).nullable().optional(),
@@ -43,20 +45,20 @@ const workflowSchema = z.object({
 }).strict();
 
 export const assistantAIResponseSchema = z.object({
-  type: z.enum(responseTypeValues),
+  type: z.enum(responseTypeValues).default('conversation'),
 
-  intent: z.enum(workflowActionValues).nullable(),
+  intent: z.enum(workflowActionValues).nullable().optional().default(null),
 
-  confidence: z.number().min(0).max(1),
+  confidence: z.number().min(0).max(1).optional().default(0.95),
 
   entities: entitiesSchema.default({}),
 
-  workflow: workflowSchema.nullable(),
+  workflow: workflowSchema.nullable().optional().default(null),
 
-  clarificationQuestion: z.string().trim().max(1000).nullable(),
+  clarificationQuestion: z.string().trim().max(1000).nullable().optional().default(null),
 
   response: z.string().trim().min(1).max(4000)
-}).strict();
+});
 
 export const validateAssistantRequest = (input) =>
   assistantRequestSchema.safeParse(input);

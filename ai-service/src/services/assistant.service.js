@@ -135,7 +135,7 @@ export const createAssistantService = ({
     const aiResult = await aiServiceImpl.generateChatCompletion({
       messages,
       temperature: 0.1,
-      maxTokens: 1200
+      maxTokens: 800
     });
 
     // 5. Extract and parse JSON.

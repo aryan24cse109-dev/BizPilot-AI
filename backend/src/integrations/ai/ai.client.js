@@ -1,7 +1,7 @@
 import { env } from "../../config/env.js";
 import { ApiError } from "../../utils/ApiError.js";
 
-const DEFAULT_TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 60_000;
 const MAX_RESPONSE_BYTES = 512 * 1024;
 
 export class AIServiceError extends ApiError {

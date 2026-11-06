@@ -93,6 +93,10 @@ export const validateAndNormalizeAIResponse = (input) => {
   if (response.workflow) {
     const allowed = allowedParameters[response.workflow.action];
     for (const [key, value] of Object.entries(response.workflow.parameters)) {
+      if (value === null || value === undefined || value === "") {
+        delete response.workflow.parameters[key];
+        continue;
+      }
       if (!allowed.includes(key) || !parameterSchemas[key]) {
         return { success: false, issues: [{ message: `Unsupported workflow parameter: ${key}.` }] };
       }
