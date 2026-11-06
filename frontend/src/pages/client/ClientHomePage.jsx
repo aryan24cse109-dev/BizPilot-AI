@@ -102,10 +102,10 @@ export const ClientHomePage = () => {
           <Button
             variant="secondary"
             size="sm"
-            icon={MailPlus}
-            onClick={() => navigate('/invitations/accept')}
+            icon={CreditCard}
+            onClick={() => navigate('/portal/history')}
           >
-            Accept Invitation
+            Payment History
           </Button>
           <Button
             variant="primary"

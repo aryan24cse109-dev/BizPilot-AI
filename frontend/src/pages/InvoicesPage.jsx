@@ -61,7 +61,7 @@ export const InvoicesPage = () => {
   const [discountRate, setDiscountRate] = useState(0);
   const [notes, setNotes] = useState('Thank you for your business. Payment is due within 14 days.');
   const [items, setItems] = useState([
-    { description: 'Website Development & Design Retainer', quantity: 1, unitPrice: 15000 }
+    { description: '', quantity: 1, unitPrice: 0 }
   ]);
   const [submitting, setSubmitting] = useState(false);
 

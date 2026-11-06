@@ -24,8 +24,19 @@ export const ForgotPasswordPage = () => {
   };
 
   return (
-    <div className="saas-card p-8 shadow-xl bg-surface-light dark:bg-surface-dark border border-slate-200 dark:border-slate-800">
-      <div className="mb-6">
+    <div className="saas-card p-6 sm:p-8 shadow-xl bg-surface-light dark:bg-surface-dark border border-slate-200 dark:border-slate-800">
+      {/* Centered Brand Logo (in high-contrast dark capsule) */}
+      <div className="flex justify-center mb-4">
+        <div className="inline-flex items-center justify-center px-6 py-2 rounded-2xl bg-[#1C1D22] border border-[#2B2C33] shadow-md">
+          <img
+            src="/wealthra-logo.png"
+            alt="Wealthra"
+            className="h-8 w-auto max-w-[180px] object-contain"
+          />
+        </div>
+      </div>
+
+      <div className="mb-4 text-center">
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Recover your credentials</h2>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
           Enter your registered email address and we will dispatch a secure reset token.

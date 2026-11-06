@@ -208,6 +208,24 @@ export const SettingsPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Platform & Intellectual Property */}
+      <div className="bg-white p-6 rounded-3xl space-y-4 border border-[#E8E4DC] shadow-xs">
+        <div className="flex items-center gap-2.5 pb-3 border-b border-[#E8E4DC]">
+          <ShieldCheck className="w-5 h-5 text-[#1C1D22]" />
+          <h3 className="text-sm font-bold text-[#1C1D22]">Platform & Ownership Verification</h3>
+        </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div>
+            <p className="font-bold text-[#1C1D22]">Wealthra™ Financial Operations Engine</p>
+            <p className="text-[11px] text-[#8E9297] mt-0.5">Authoritative Business Invoicing & Settlement Platform</p>
+          </div>
+          <div className="px-3 py-1.5 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC] text-left sm:text-right">
+            <span className="text-[10px] text-[#8E9297] block">Intellectual Property</span>
+            <span className="font-bold text-[#1C1D22] text-xs">Owned by DEVRATOR</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

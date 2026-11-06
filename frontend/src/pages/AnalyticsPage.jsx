@@ -61,8 +61,8 @@ export const AnalyticsPage = () => {
   ];
 
   const forecasting = data?.forecasting || {
-    projectedNextMonth: Math.round(totalCaptured * 1.15 || totalInvoiced * 0.8 || 25000),
-    lastThreeMonthAverage: Math.round(totalCaptured || 15000),
+    projectedNextMonth: Math.round(totalCaptured > 0 ? totalCaptured * 1.15 : (totalInvoiced > 0 ? totalInvoiced * 0.8 : 0)),
+    lastThreeMonthAverage: Math.round(totalCaptured || 0),
     basis: 'Calculated using real-time captured invoice settlements in Neon DB.',
   };
 

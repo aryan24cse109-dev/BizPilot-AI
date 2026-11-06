@@ -58,7 +58,7 @@ export const DiscoverPage = () => {
           Discover & Connect
         </h1>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          Search registered business accounts and clients across the BizPilot network to establish invoicing connections.
+          Search registered business accounts and clients across the Wealthra™ network to establish invoicing connections.
         </p>
       </div>
 
