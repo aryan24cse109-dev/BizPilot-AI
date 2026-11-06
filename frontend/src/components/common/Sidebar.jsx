@@ -43,14 +43,9 @@ export const Sidebar = () => {
     <aside className="w-64 bg-charcoal-900/95 border-r border-slate-800/80 flex flex-col justify-between h-screen sticky top-0 shrink-0 select-none">
       {/* Brand Logo & Header */}
       <div>
-        <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-800/80">
-          <img src="/wealthra-logo.png" alt="Wealthra" className="h-7 w-auto object-contain" />
-          <div>
-            <h1 className="text-base font-extrabold tracking-tight text-white flex items-center gap-1.5">
-              Wealthra<span className="text-[#F5C869] text-xs font-serif font-normal">™</span>
-            </h1>
-            <p className="text-[10px] text-slate-400 font-medium">Fintech Operations</p>
-          </div>
+        <div className="py-4 px-4 flex flex-col items-center justify-center text-center border-b border-slate-800/80">
+          <img src="/wealthra-logo.png" alt="Wealthra" className="h-11 w-auto max-w-[200px] object-contain mx-auto mb-1" />
+          <p className="text-[10px] text-slate-400 font-medium">Fintech Operations</p>
         </div>
 
         {/* Navigation Links */}

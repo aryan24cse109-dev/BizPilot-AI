@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNotifications } from '../context/NotificationContext.jsx';
 import { NotificationDrawer } from '../components/notifications/NotificationDrawer.jsx';
@@ -44,13 +44,15 @@ export const ClientLayout = () => {
       >
         <div className="flex flex-col flex-1 min-h-0">
           {/* Top Brand Logo */}
-          <div className="px-2 py-2 mb-6">
-            <img
-              src="/wealthra-logo.png"
-              alt="Wealthra"
-              className="h-8 w-auto max-w-[170px] object-contain mb-1.5"
-            />
-            <p className="text-[11px] font-medium leading-tight" style={{ color: '#8E9297' }}>
+          <div className="px-2 pt-2 pb-3 mb-6 flex flex-col items-center justify-center text-center border-b border-white/5">
+            <Link to="/portal" className="flex items-center justify-center w-full mb-2">
+              <img
+                src="/wealthra-logo.png"
+                alt="Wealthra"
+                className="h-12 sm:h-14 w-auto max-w-[210px] object-contain mx-auto transition-transform hover:scale-105"
+              />
+            </Link>
+            <p className="text-[11px] font-medium leading-tight flex items-center justify-center" style={{ color: '#8E9297' }}>
               Client Collaboration
             </p>
           </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useNotifications } from '../context/NotificationContext.jsx';
@@ -97,15 +97,15 @@ export const UnifiedLayout = () => {
       >
         <div className="flex flex-col flex-1 min-h-0">
           {/* Top Brand / Wealthra Logo */}
-          <div className="px-2 py-2 mb-4">
-            <div className="flex items-center gap-2 mb-1.5">
+          <div className="px-2 pt-2 pb-3 mb-4 flex flex-col items-center justify-center text-center border-b border-white/5">
+            <Link to="/" className="flex items-center justify-center w-full mb-2">
               <img
                 src="/wealthra-logo.png"
                 alt="Wealthra"
-                className="h-8 w-auto max-w-[170px] object-contain"
+                className="h-12 sm:h-14 w-auto max-w-[210px] object-contain mx-auto transition-transform hover:scale-105"
               />
-            </div>
-            <p className="text-[10px] font-medium leading-tight flex items-center gap-1.5" style={{ color: '#8E9297' }}>
+            </Link>
+            <p className="text-[10px] font-medium leading-tight flex items-center justify-center gap-1.5" style={{ color: '#8E9297' }}>
               {navigationMode === 'DUAL_ROLE' && (
                 <>
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -241,15 +241,6 @@ export const UnifiedLayout = () => {
               </div>
             )}
           </nav>
-
-          {/* Sidebar Status Footnote */}
-          <div className="pt-3 border-t border-[#2B2C33] mt-2 flex items-center justify-between px-2 text-[10px] text-[#8E9297]">
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              <span>System Online</span>
-            </span>
-            <span className="font-mono text-[9px] text-[#64748B]">v1.0.0</span>
-          </div>
         </div>
       </aside>
 
