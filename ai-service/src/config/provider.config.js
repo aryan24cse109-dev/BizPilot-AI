@@ -5,7 +5,7 @@ export const PROVIDER_CONFIG = Object.freeze({
   sarvam: Object.freeze({
     name: 'sarvam',
     apiKey: env.SARVAM_API_KEY ?? null,
-    model: env.SARVAM_MODEL ?? 'sarvam-105b',
+    model: env.SARVAM_MODEL ?? 'sarvam-105b-conversations',
     enabled: Boolean(env.SARVAM_API_KEY)
   }),
 

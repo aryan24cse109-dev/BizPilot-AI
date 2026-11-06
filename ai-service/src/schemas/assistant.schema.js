@@ -36,18 +36,18 @@ const entitiesSchema = z.object({
   dueDate: z.string().trim().max(50).nullable().optional(),
   message: z.string().trim().max(2000).nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional()
-}).strict();
+}).passthrough();
 
 const workflowSchema = z.object({
-  action: z.enum(workflowActionValues),
+  action: z.string(),
   parameters: z.record(z.string(), z.unknown()).default({}),
-  requiresConfirmation: z.boolean()
-}).strict();
+  requiresConfirmation: z.boolean().optional().default(false)
+}).passthrough();
 
 export const assistantAIResponseSchema = z.object({
-  type: z.enum(responseTypeValues).default('conversation'),
+  type: z.string().default('conversation'),
 
-  intent: z.enum(workflowActionValues).nullable().optional().default(null),
+  intent: z.string().nullable().optional().default(null),
 
   confidence: z.number().min(0).max(1).optional().default(0.95),
 
@@ -58,7 +58,7 @@ export const assistantAIResponseSchema = z.object({
   clarificationQuestion: z.string().trim().max(1000).nullable().optional().default(null),
 
   response: z.string().trim().min(1).max(4000)
-});
+}).passthrough();
 
 export const validateAssistantRequest = (input) =>
   assistantRequestSchema.safeParse(input);

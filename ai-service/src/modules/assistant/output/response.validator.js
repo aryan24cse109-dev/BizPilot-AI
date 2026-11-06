@@ -5,8 +5,11 @@ import {
 
 import {
   AI_RESPONSE_TYPES,
-  CONFIRMATION_REQUIRED_ACTIONS
+  CONFIRMATION_REQUIRED_ACTIONS,
+  WORKFLOW_ACTIONS
 } from '../../../utils/constants.js';
+
+const validWorkflowActions = new Set(Object.values(WORKFLOW_ACTIONS));
 
 export class AssistantOutputValidationError extends Error {
   constructor(message, details = null) {
@@ -32,6 +35,11 @@ export const validateAndNormalizeAssistantOutput = (input) => {
   const response = validation.data;
 
   // Normalize workflow structure
+  if (response.workflow && !validWorkflowActions.has(response.workflow.action)) {
+    response.workflow = null;
+    response.type = AI_RESPONSE_TYPES.CONVERSATION;
+  }
+
   if (response.type === AI_RESPONSE_TYPES.WORKFLOW && !response.workflow) {
     response.type = AI_RESPONSE_TYPES.CONVERSATION;
   }
@@ -45,14 +53,9 @@ export const validateAndNormalizeAssistantOutput = (input) => {
     response.intent = response.workflow.action;
   }
 
-  // Only workflow responses may contain an actionable intent.
-  if (
-    response.type === AI_RESPONSE_TYPES.WORKFLOW &&
-    !response.intent
-  ) {
-    throw new AssistantOutputValidationError(
-      'Workflow response must contain an intent.'
-    );
+  if (response.type !== AI_RESPONSE_TYPES.WORKFLOW) {
+    response.intent = null;
+    response.workflow = null;
   }
 
   // Confirmation policy is always controlled by server code.
