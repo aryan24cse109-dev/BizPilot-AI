@@ -26,7 +26,8 @@ import {
   User,
   History,
   Briefcase,
-  Layers
+  Layers,
+  ArrowLeftRight
 } from 'lucide-react';
 
 export const UnifiedLayout = () => {
@@ -85,6 +86,12 @@ export const UnifiedLayout = () => {
   const showClientSection = navigationMode === 'DUAL_ROLE' || navigationMode === 'CLIENT_ONLY';
 
   const isClientView = location.pathname.startsWith('/portal');
+
+  const googleAvatarUrl =
+    user?.avatar ||
+    user?.picture ||
+    user?.photoURL ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.name || user?.email || 'User')}&background=1C1D22&color=F5C869&bold=true&rounded=true&size=128`;
 
   return (
     <div className="min-h-screen w-full flex bg-[#F7F5F0] text-[#1C1D22] font-sans antialiased">
@@ -277,18 +284,6 @@ export const UnifiedLayout = () => {
           </div>
 
           <div className="flex items-center gap-2.5 sm:gap-3">
-            {/* User Info */}
-            <div className="text-right hidden md:block">
-              <p className="text-xs font-bold text-[#1C1D22] leading-tight">{user?.fullName || user?.name}</p>
-              <p className="text-[10px] text-[#8E9297]">
-                {navigationMode === 'DUAL_ROLE'
-                  ? 'Business Owner & Client'
-                  : user?.accountCategory === 'BUSINESS'
-                    ? 'Verified Business Owner'
-                    : 'Verified Client'}
-              </p>
-            </div>
-
             {/* Notification Bell */}
             <button
               onClick={() => setShowNotificationDrawer(true)}
@@ -302,6 +297,137 @@ export const UnifiedLayout = () => {
                 </span>
               )}
             </button>
+
+            {/* Google Account Profile Button */}
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-2.5 p-1.5 pl-2 pr-3 rounded-2xl bg-white border border-[#E8E4DC] hover:border-[#1C1D22] transition shadow-xs cursor-pointer group"
+                title="Google Account Profile"
+              >
+                <div className="relative shrink-0">
+                  <img
+                    src={googleAvatarUrl}
+                    alt="Google Profile"
+                    className="w-7 h-7 rounded-xl object-cover border border-[#E8E4DC] group-hover:scale-105 transition-transform"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.name || 'User')}&background=1C1D22&color=F5C869&bold=true&rounded=true`;
+                    }}
+                  />
+                  {/* Google Authenticated Badge */}
+                  <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-white border border-slate-200 shadow-xs flex items-center justify-center p-0.5">
+                    <svg className="w-full h-full" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                      />
+                    </svg>
+                  </span>
+                </div>
+
+                <div className="text-left hidden sm:block max-w-[120px]">
+                  <p className="text-xs font-bold text-[#1C1D22] truncate leading-tight">
+                    {user?.fullName?.split(' ')[0] || user?.name?.split(' ')[0] || 'Profile'}
+                  </p>
+                  <p className="text-[10px] text-[#8E9297] truncate">
+                    {navigationMode === 'DUAL_ROLE'
+                      ? 'Dual Role'
+                      : user?.accountCategory === 'BUSINESS'
+                        ? 'Business'
+                        : 'Client'}
+                  </p>
+                </div>
+
+                <ChevronDown className="w-3.5 h-3.5 text-[#8E9297] group-hover:text-[#1C1D22] transition-colors" />
+              </button>
+
+              {/* Profile Dropdown Popover */}
+              {showUserMenu && (
+                <div
+                  className="absolute right-0 mt-2 w-64 bg-white border border-[#E8E4DC] rounded-2xl shadow-xl p-3 z-50 animate-in fade-in"
+                  onMouseLeave={() => setShowUserMenu(false)}
+                >
+                  <div className="flex items-center gap-3 pb-3 border-b border-[#E8E4DC]">
+                    <div className="relative shrink-0">
+                      <img
+                        src={googleAvatarUrl}
+                        alt="Avatar"
+                        className="w-10 h-10 rounded-xl object-cover border border-[#E8E4DC]"
+                      />
+                      <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white border border-slate-200 shadow-xs flex items-center justify-center p-0.5">
+                        <svg className="w-full h-full" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                        </svg>
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-[#1C1D22] truncate">{user?.fullName || user?.name}</p>
+                      <p className="text-[10px] text-[#8E9297] truncate">{user?.email}</p>
+                      <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded-full border border-emerald-200 mt-1">
+                        <Check className="w-2.5 h-2.5" /> Google Account
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="py-2 space-y-1 text-xs">
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        navigate(isClientView ? '/portal/profile' : '/business/settings');
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[#1C1D22] hover:bg-[#FAF8F5] transition font-medium cursor-pointer"
+                    >
+                      <User className="w-3.5 h-3.5 text-[#8E9297]" />
+                      <span>{isClientView ? 'Client Profile' : 'Business Settings'}</span>
+                    </button>
+
+                    {navigationMode === 'DUAL_ROLE' && (
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          navigate(isClientView ? '/business' : '/portal');
+                        }}
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-[#1C1D22] hover:bg-[#FAF8F5] transition font-medium cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2">
+                          <ArrowLeftRight className="w-3.5 h-3.5 text-[#F5C869]" />
+                          <span>Switch to {isClientView ? 'Business' : 'Client Portal'}</span>
+                        </span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="pt-2 border-t border-[#E8E4DC]">
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        logout();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 transition text-xs font-bold cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Logout Button */}
             <button
