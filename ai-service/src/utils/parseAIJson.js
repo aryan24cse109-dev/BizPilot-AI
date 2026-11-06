@@ -16,14 +16,14 @@ export const parseAIJson = (content) => {
   // Try direct parse first
   try {
     return JSON.parse(cleaned);
-  } catch {}
+  } catch { }
 
   // Try extracting markdown JSON block ```json ... ```
   const jsonMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
   if (jsonMatch && jsonMatch[1]) {
     try {
       return JSON.parse(jsonMatch[1].trim());
-    } catch {}
+    } catch { }
   }
 
   // Try extracting the first outer JSON object { ... }
@@ -32,7 +32,7 @@ export const parseAIJson = (content) => {
   if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
     try {
       return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
-    } catch {}
+    } catch { }
   }
 
   // Fallback: If AI returned plain conversational text, wrap it into a valid conversational response

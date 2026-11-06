@@ -9,6 +9,7 @@ export const AuthLayout = () => {
   return (
     <div className="h-screen w-full flex flex-col justify-between bg-canvas-light dark:bg-canvas-dark text-slate-900 dark:text-slate-100 transition-colors duration-200 overflow-hidden">
 
+
       {/* Auth Content */}
       <div className="flex-1 flex items-center justify-center px-4 py-2 min-h-0 overflow-y-auto">
         <div className="w-full max-w-md my-auto">
