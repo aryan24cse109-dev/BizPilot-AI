@@ -65,7 +65,7 @@ export class MessageService {
               billingAddress: invitation?.company || "",
             },
           })
-          .catch(() => {});
+          .catch(() => { });
 
         // Link pending invitations & unlinked invoices
         await prisma.invitation
@@ -73,14 +73,14 @@ export class MessageService {
             where: { email: normalizedEmail },
             data: { status: "ACCEPTED", acceptedAt: new Date(), acceptedByUserId: targetUser.id },
           })
-          .catch(() => {});
+          .catch(() => { });
 
         await prisma.invoice
           .updateMany({
             where: { clientEmail: normalizedEmail },
             data: { clientUserId: targetUser.id },
           })
-          .catch(() => {});
+          .catch(() => { });
       }
 
       user2Id = targetUser.id;
@@ -146,7 +146,7 @@ export class MessageService {
               acceptedAt: new Date(),
             },
           })
-          .catch(() => {});
+          .catch(() => { });
       });
 
     // Normalized ordering for conversation pair
@@ -334,7 +334,7 @@ export class MessageService {
           data: { conversationId, senderId },
         },
       })
-      .catch(() => {});
+      .catch(() => { });
 
     return {
       id,
