@@ -64,11 +64,21 @@ export async function createPaymentOrder(user, invoiceId, input) {
       const isClientMatch =
         invoice &&
         (invoice.clientUserId === user.id ||
-          (invoice.clientEmail && invoice.clientEmail.toLowerCase() === user.email.toLowerCase().trim()));
+          (invoice.clientEmail && invoice.clientEmail.toLowerCase() === user.email.toLowerCase().trim()) ||
+          invoice.businessUserId === user.id);
 
       if (!invoice || !isClientMatch) {
         throw new ApiError(404, "Invoice not found or unauthorized.");
       }
+
+      if (invoice.status === "DRAFT" && invoice.businessUserId === user.id) {
+        await tx.invoice.update({
+          where: { id: invoice.id },
+          data: { status: "SENT" },
+        });
+        invoice.status = "SENT";
+      }
+
       if (!["SENT", "VIEWED", "PARTIALLY_PAID", "OVERDUE"].includes(invoice.status)) {
         throw new ApiError(400, "This invoice is not available for payment.");
       }

@@ -111,6 +111,12 @@ async function findAccessibleInvoice(invoiceId, user) {
     throw new ApiError(404, "Invoice not found.");
   }
 
+  if (invoice.businessUser && !invoice.businessUser.businessProfile) {
+    invoice.businessUser.businessProfile = await prisma.businessProfile.findUnique({
+      where: { userId: invoice.businessUserId },
+    });
+  }
+
   return invoice;
 }
 

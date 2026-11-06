@@ -36,23 +36,32 @@ export const ClientInvoiceDetailsPage = () => {
 
   // Payment checkout state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentTab, setPaymentTab] = useState('upi'); // 'upi', 'card', 'netbanking'
-  const [paymentProvider, setPaymentProvider] = useState('RAZORPAY');
   const [paymentAmount, setPaymentAmount] = useState('');
-  const [upiId, setUpiId] = useState('client@upi');
-  const [cardNumber, setCardNumber] = useState('4532 •••• •••• 8892');
-  const [cardExpiry, setCardExpiry] = useState('12/28');
-  const [selectedBank, setSelectedBank] = useState('HDFC Bank');
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentSuccessData, setPaymentSuccessData] = useState(null);
+
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
 
   const fetchInvoice = async () => {
     setLoading(true);
     try {
       const res = await invoicesApi.getInvoice(id);
-      if (res.success && res.data) {
-        setInvoice(res.data);
-        setPaymentAmount(String(res.data.balanceDue));
+      const inv = res?.data || res;
+      if (inv) {
+        setInvoice(inv);
+        setPaymentAmount(String(inv.balanceDue ?? inv.totalAmount ?? '0'));
       }
     } catch (err) {
       console.error('Failed to load invoice:', err);
@@ -69,6 +78,11 @@ export const ClientInvoiceDetailsPage = () => {
   const handleInitiatePayment = async () => {
     setPaymentProcessing(true);
     try {
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded || !window.Razorpay) {
+        throw new Error('Unable to load Razorpay Checkout SDK. Please check your internet connection.');
+      }
+
       const idempotencyKey = `idemp_${invoice.id}_${Date.now()}`;
       const orderRes = await paymentsApi.createOrder(invoice.id, {
         amount: Number(paymentAmount),
@@ -76,45 +90,61 @@ export const ClientInvoiceDetailsPage = () => {
       });
 
       const orderData = orderRes?.data || orderRes;
-      if (orderData?.keyId && orderData?.orderId && window.Razorpay) {
-        const options = {
-          key: orderData.keyId,
-          amount: Math.round(Number(paymentAmount) * 100),
-          currency: invoice.currency || 'INR',
-          name: invoice.businessUser?.businessProfile?.businessName || invoice.workspace?.name || 'Authorized Merchant',
-          description: `Payment for Invoice ${invoice.invoiceNumber}`,
-          order_id: orderData.orderId,
-          handler: async (response) => {
-            try {
-              const verifyRes = await paymentsApi.verifyPayment({
-                razorpayOrderId: response.razorpay_order_id,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature,
-              });
-              setPaymentSuccessData(verifyRes?.data || verifyRes);
-              toast.success('Payment Verified Successfully!');
-              fetchInvoice();
-            } catch (vErr) {
-              toast.error('Payment Verification Failed', vErr.message);
-            }
-          },
-          prefill: {
-            name: user?.fullName || 'Client User',
-            email: user?.email || '',
-          },
-          theme: { color: '#17A673' },
-        };
-        const rzp = new window.Razorpay(options);
-        rzp.open();
-      } else {
-        toast.info(
-          'Payment Order Prepared',
-          `Order ${orderData?.orderId || 'created'} registered with gateway.`
-        );
+      const keyId = orderData?.keyId || orderRes?.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
+      const orderId = orderData?.orderId || orderRes?.orderId;
+
+      if (!orderId) {
+        throw new Error('Payment gateway order could not be generated.');
       }
+
+      const merchantName =
+        invoice.businessUser?.businessProfile?.businessName ||
+        invoice.businessUser?.fullName ||
+        'Wealthra™ Merchant';
+
+      const options = {
+        key: keyId,
+        amount: Math.round(Number(paymentAmount) * 100),
+        currency: invoice.currency || 'INR',
+        name: merchantName,
+        description: `Settlement for Invoice ${invoice.invoiceNumber}`,
+        order_id: orderId,
+        modal: {
+          ondismiss: () => {
+            setPaymentProcessing(false);
+          },
+        },
+        handler: async (response) => {
+          try {
+            const verifyRes = await paymentsApi.verifyPayment({
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            });
+            setPaymentSuccessData(verifyRes?.data || verifyRes);
+            toast.success('Payment Verified Successfully!');
+            fetchInvoice();
+          } catch (vErr) {
+            toast.error('Payment Verification Failed', vErr.message);
+          } finally {
+            setPaymentProcessing(false);
+          }
+        },
+        prefill: {
+          name: user?.fullName || invoice.clientUser?.fullName || 'Client User',
+          email: user?.email || invoice.clientEmail || '',
+        },
+        theme: { color: '#17A673' },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (resp) {
+        toast.error('Payment Failed', resp.error?.description || 'Transaction declined.');
+        setPaymentProcessing(false);
+      });
+      rzp.open();
     } catch (err) {
       toast.error('Payment Error', err.message || 'Payment processing failed.');
-    } finally {
       setPaymentProcessing(false);
     }
   };
@@ -322,6 +352,80 @@ export const ClientInvoiceDetailsPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Official Vendor Bank Settlement & Beneficiary Details */}
+        {invoice.businessUser?.businessProfile && (
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-5 bg-slate-50/70 dark:bg-charcoal-950/60 space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Building className="w-4 h-4 text-emerald-primary" />
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                  Vendor Bank Settlement Credentials
+                </h4>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-primary font-bold border border-emerald-500/20">
+                Verified Business Account
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1 text-xs">
+              <div className="p-3 rounded-xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 block uppercase font-medium">Beneficiary / Account</span>
+                <span className="font-bold text-slate-900 dark:text-white block mt-0.5 truncate">
+                  {invoice.businessUser.businessProfile.bankAccountName ||
+                   invoice.businessUser.businessProfile.businessName ||
+                   invoice.businessUser.fullName}
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 block uppercase font-medium">Bank Name</span>
+                <span className="font-bold text-slate-900 dark:text-white block mt-0.5">
+                  {invoice.businessUser.businessProfile.bankName || 'Verified Bank Account'}
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 block uppercase font-medium">Account Number</span>
+                <span className="font-mono font-bold text-slate-900 dark:text-white block mt-0.5 tracking-wider">
+                  {invoice.businessUser.businessProfile.bankAccountNumber || 'Settlement via Gateway'}
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 block uppercase font-medium">IFSC Code</span>
+                <span className="font-mono font-bold text-slate-900 dark:text-white block mt-0.5 tracking-wider">
+                  {invoice.businessUser.businessProfile.bankIfscCode || '—'}
+                </span>
+              </div>
+            </div>
+
+            {invoice.businessUser.businessProfile.upiId && (
+              <div className="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-slate-800 text-xs">
+                <div className="flex items-center gap-2">
+                  <Smartphone className="w-4 h-4 text-emerald-primary" />
+                  <span className="text-slate-500">Official UPI ID:</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white">
+                    {invoice.businessUser.businessProfile.upiId}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(invoice.businessUser.businessProfile.upiId);
+                    toast.success('Vendor UPI ID copied to clipboard');
+                  }}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-charcoal-800 hover:bg-slate-200 dark:hover:bg-charcoal-700 text-[11px] font-semibold text-slate-700 dark:text-slate-300 transition"
+                >
+                  <Copy className="w-3 h-3" /> Copy
+                </button>
+              </div>
+            )}
+
+            {invoice.businessUser.businessProfile.paymentInstructions && (
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 italic pt-1">
+                Settlement Instructions: {invoice.businessUser.businessProfile.paymentInstructions}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Verified Payment Checkout Modal */}
@@ -351,121 +455,133 @@ export const ClientInvoiceDetailsPage = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+            {/* Amount Banner */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-surface-light dark:via-charcoal-900 to-teal-500/10 border border-emerald-500/30 flex items-center justify-between">
               <div>
-                <span className="text-[10px] uppercase font-bold text-emerald-primary tracking-wider">Payable Balance</span>
-                <p className="font-mono text-xl font-black text-slate-900 dark:text-white">₹{Number(paymentAmount).toLocaleString('en-IN')}</p>
+                <span className="text-[10px] uppercase font-bold text-emerald-primary tracking-wider">Settlement Amount</span>
+                <p className="font-mono text-2xl font-black text-slate-900 dark:text-white mt-0.5">
+                  ₹{Number(paymentAmount).toLocaleString('en-IN')}
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Invoice {invoice.invoiceNumber} • Due {new Date(invoice.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </p>
               </div>
               <span className="text-xs px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-primary font-semibold border border-emerald-500/30">
-                Sandbox Mode
+                Razorpay Secured
               </span>
             </div>
 
-            {/* Payment Method Tabs */}
-            <div className="grid grid-cols-3 gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
-              {[
-                { id: 'upi', label: 'UPI / QR Code', icon: QrCode },
-                { id: 'card', label: 'Debit/Credit Card', icon: CreditCard },
-                { id: 'netbanking', label: 'Net Banking', icon: Building },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setPaymentTab(tab.id)}
-                  className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
-                    paymentTab === tab.id
-                      ? 'bg-emerald-primary/10 text-emerald-primary border border-emerald-primary/40'
-                      : 'bg-slate-100 dark:bg-charcoal-950 text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  <tab.icon className="w-3.5 h-3.5" />
-                  {tab.label}
-                </button>
-              ))}
+            {/* Official Business Owner Bank Settlement Details */}
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 bg-slate-50/80 dark:bg-charcoal-950/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Building className="w-4 h-4 text-emerald-primary" />
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                    Business Owner Bank Credentials
+                  </h4>
+                </div>
+                <span className="text-[10px] font-semibold text-emerald-primary">
+                  Recipient Account
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-500 block font-medium">Beneficiary Name</span>
+                  <span className="font-bold text-slate-900 dark:text-white block mt-0.5">
+                    {invoice.businessUser?.businessProfile?.bankAccountName ||
+                     invoice.businessUser?.businessProfile?.businessName ||
+                     invoice.businessUser?.fullName ||
+                     'Authorized Merchant'}
+                  </span>
+                </div>
+                <div className="p-3 rounded-xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-500 block font-medium">Bank Name</span>
+                  <span className="font-bold text-slate-900 dark:text-white block mt-0.5">
+                    {invoice.businessUser?.businessProfile?.bankName || 'Direct Clearing / UPI'}
+                  </span>
+                </div>
+                <div className="p-3 rounded-xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-500 block font-medium">Account Number</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white block mt-0.5">
+                    {invoice.businessUser?.businessProfile?.bankAccountNumber || 'Settlement via Gateway'}
+                  </span>
+                </div>
+                <div className="p-3 rounded-xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-500 block font-medium">IFSC Code</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white block mt-0.5">
+                    {invoice.businessUser?.businessProfile?.bankIfscCode || '—'}
+                  </span>
+                </div>
+              </div>
+
+              {invoice.businessUser?.businessProfile?.upiId && (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-slate-800 text-xs">
+                  <div className="flex items-center gap-2">
+                    <Smartphone className="w-4 h-4 text-emerald-primary" />
+                    <div>
+                      <span className="text-[10px] text-slate-500 block">Vendor UPI ID</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">
+                        {invoice.businessUser.businessProfile.upiId}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(invoice.businessUser.businessProfile.upiId);
+                      toast.success('Vendor UPI ID copied to clipboard');
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-charcoal-800 hover:bg-slate-200 dark:hover:bg-charcoal-700 text-xs font-semibold text-slate-700 dark:text-slate-300 transition"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> Copy
+                  </button>
+                </div>
+              )}
+
+              {invoice.businessUser?.businessProfile?.paymentInstructions && (
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 italic pt-1">
+                  Settlement Note: {invoice.businessUser.businessProfile.paymentInstructions}
+                </p>
+              )}
             </div>
 
-            {paymentTab === 'upi' && (
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-charcoal-950 border border-slate-200 dark:border-slate-800 text-center space-y-3">
-                <div className="w-32 h-32 bg-white p-2 rounded-xl mx-auto flex items-center justify-center shadow-md">
-                  <div className="w-full h-full bg-slate-900 rounded p-2 flex flex-col items-center justify-center text-white">
-                    <QrCode className="w-16 h-16 text-emerald-400" />
-                    <span className="text-[8px] font-mono mt-1">Scan via UPI</span>
-                  </div>
-                </div>
-                <input
-                  type="text"
-                  value={upiId}
-                  onChange={(e) => setUpiId(e.target.value)}
-                  className="w-full max-w-xs mx-auto bg-slate-100 dark:bg-charcoal-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-center text-slate-900 dark:text-white"
-                  placeholder="Enter UPI ID (e.g. user@okhdfc)"
-                />
+            {/* Instant Gateway Settlement Trigger */}
+            <div className="p-4 rounded-2xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-slate-800 space-y-3">
+              <div>
+                <h5 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <CreditCard className="w-4 h-4 text-emerald-primary" /> Instant Settlement via Razorpay
+                </h5>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Pay securely using any UPI app (Google Pay, PhonePe, Paytm), Debit/Credit Card, or NetBanking.
+                </p>
               </div>
-            )}
 
-            {paymentTab === 'card' && (
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-charcoal-950 border border-slate-200 dark:border-slate-800 space-y-3">
-                <input
-                  type="text"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(e.target.value)}
-                  className="w-full bg-slate-100 dark:bg-charcoal-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-white"
-                  placeholder="Card Number"
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    value={cardExpiry}
-                    onChange={(e) => setCardExpiry(e.target.value)}
-                    className="w-full bg-slate-100 dark:bg-charcoal-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-white"
-                    placeholder="MM/YY"
-                  />
-                  <input
-                    type="password"
-                    maxLength={3}
-                    defaultValue="889"
-                    className="w-full bg-slate-100 dark:bg-charcoal-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-white"
-                    placeholder="CVV"
-                  />
-                </div>
-              </div>
-            )}
-
-            {paymentTab === 'netbanking' && (
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-charcoal-950 border border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-2">
-                {['HDFC Bank', 'ICICI Bank', 'SBI', 'Axis Bank', 'Kotak Bank'].map((b) => (
-                  <button
-                    key={b}
-                    type="button"
-                    onClick={() => setSelectedBank(b)}
-                    className={`p-2.5 rounded-xl border text-xs font-semibold text-left transition ${
-                      selectedBank === b
-                        ? 'bg-emerald-primary/10 border-emerald-primary text-emerald-primary'
-                        : 'bg-white dark:bg-charcoal-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    {b}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
-              <Button
-                variant="secondary"
-                size="md"
-                onClick={() => setShowPaymentModal(false)}
-                disabled={paymentProcessing}
-              >
-                Cancel
-              </Button>
               <Button
                 variant="primary"
-                size="md"
+                size="lg"
+                className="w-full text-xs font-bold shadow-md"
                 onClick={handleInitiatePayment}
                 loading={paymentProcessing}
                 icon={ShieldCheck}
               >
-                Pay & Settle ₹{Number(paymentAmount).toLocaleString('en-IN')}
+                Launch Razorpay Checkout (₹{Number(paymentAmount).toLocaleString('en-IN')})
+              </Button>
+
+              <div className="flex items-center justify-center gap-2 text-[10px] text-slate-400 pt-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-primary" />
+                <span>256-bit SSL Encrypted • Direct Bank Settlement</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowPaymentModal(false)}
+                disabled={paymentProcessing}
+              >
+                Close
               </Button>
             </div>
           </div>
