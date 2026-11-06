@@ -84,38 +84,60 @@ export const InvoicesPage = () => {
 
   const fetchClients = async () => {
     try {
-      const [connRes, invRes] = await Promise.all([
+      const [connRes, invRes, inviteRes] = await Promise.all([
         clientsApi.getConnections().catch(() => ({ data: { connections: [] } })),
         invoicesApi.listWorkspaceInvoices({ limit: 100 }).catch(() => ({ data: { invoices: [] } })),
+        clientsApi.getInvitations().catch(() => ({ data: { invitations: [] } })),
       ]);
 
       const conns = connRes?.data?.connections || connRes?.connections || [];
       const pastInvoices = invRes?.data?.invoices || invRes?.invoices || [];
+      const invitations = inviteRes?.data?.invitations || inviteRes?.invitations || [];
 
       const clientMap = new Map();
 
-      // From active connections
-      conns.forEach((c) => {
-        if (c.clientUser && c.clientUser.email) {
-          const email = c.clientUser.email.toLowerCase();
+      // 1. From invitations (onboarded clients with or without invoices)
+      invitations.forEach((inv) => {
+        if (inv.email) {
+          const email = inv.email.toLowerCase();
+          const displayName =
+            inv.clientName ||
+            inv.acceptedByUser?.fullName ||
+            inv.acceptedByUser?.username ||
+            email.split('@')[0];
           clientMap.set(email, {
-            id: c.clientUser.id,
-            name: c.clientUser.fullName || c.clientUser.username || 'Client User',
+            id: inv.acceptedByUser?.id || inv.id || email,
+            name: displayName,
             email,
           });
         }
       });
 
-      // From previous invoices
+      // 2. From active connections
+      conns.forEach((c) => {
+        if (c.clientUser && c.clientUser.email) {
+          const email = c.clientUser.email.toLowerCase();
+          clientMap.set(email, {
+            id: c.clientUser.id,
+            name: c.clientUser.fullName || c.clientUser.username || clientMap.get(email)?.name || 'Client User',
+            email,
+          });
+        }
+      });
+
+      // 3. From previous invoices
       pastInvoices.forEach((inv) => {
         if (inv.clientEmail) {
           const email = inv.clientEmail.toLowerCase();
           if (!clientMap.has(email)) {
             clientMap.set(email, {
               id: inv.clientUserId || email,
-              name: inv.clientName || 'Invoiced Client',
+              name: inv.clientName || email.split('@')[0],
               email,
             });
+          } else if (inv.clientName && clientMap.get(email).name === email.split('@')[0]) {
+            const existing = clientMap.get(email);
+            existing.name = inv.clientName;
           }
         }
       });

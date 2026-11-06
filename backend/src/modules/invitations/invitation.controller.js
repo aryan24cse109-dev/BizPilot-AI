@@ -21,7 +21,9 @@ export async function createInvitationController(req, res, next) {
   try {
     const invitation = await createClientInvitation(
       req.user.id,
-      req.body.email
+      req.body.email,
+      req.body.clientName,
+      req.body.company
     );
 
     return res.status(201).json({

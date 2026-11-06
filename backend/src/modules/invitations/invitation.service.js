@@ -12,7 +12,7 @@ function hashToken(token) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-export async function createClientInvitation(businessUserId, email) {
+export async function createClientInvitation(businessUserId, email, clientName, company) {
   const business = await prisma.user.findUnique({
     where: { id: businessUserId },
     include: { businessProfile: true },
@@ -58,6 +58,8 @@ export async function createClientInvitation(businessUserId, email) {
     return {
       id: connection.id,
       email: normalizedEmail,
+      clientName: clientName || null,
+      company: company || null,
       status: "ACTIVE",
       delivery: { delivered: true },
       connected: true,
@@ -74,9 +76,20 @@ export async function createClientInvitation(businessUserId, email) {
   });
 
   if (existingInvitation) {
+    if (clientName || company) {
+      await prisma.invitation.update({
+        where: { id: existingInvitation.id },
+        data: {
+          clientName: clientName || existingInvitation.clientName,
+          company: company || existingInvitation.company,
+        },
+      });
+    }
     return {
       id: existingInvitation.id,
       email: normalizedEmail,
+      clientName: clientName || existingInvitation.clientName,
+      company: company || existingInvitation.company,
       status: existingInvitation.status,
       expiresAt: existingInvitation.expiresAt,
       delivery: { delivered: true },
@@ -93,6 +106,8 @@ export async function createClientInvitation(businessUserId, email) {
     data: {
       businessUserId,
       email: normalizedEmail,
+      clientName: clientName || null,
+      company: company || null,
       tokenHash,
       expiresAt,
     },
@@ -118,6 +133,8 @@ export async function createClientInvitation(businessUserId, email) {
   return {
     id: invitation.id,
     email: invitation.email,
+    clientName: invitation.clientName,
+    company: invitation.company,
     status: invitation.status,
     expiresAt: invitation.expiresAt,
     delivery,

@@ -239,6 +239,8 @@ model Invitation {
 
   businessUserId String @db.Uuid
   email          String @db.VarChar(255)
+  clientName     String? @db.VarChar(150)
+  company        String? @db.VarChar(200)
 
   // Store only the hash of the invitation token.
   tokenHash String @unique @db.VarChar(255)

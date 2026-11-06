@@ -45,42 +45,74 @@ export const ClientsPage = () => {
   const fetchClientDirectory = async () => {
     setLoading(true);
     try {
-      const [connRes, invRes] = await Promise.all([
+      const [connRes, invRes, inviteRes] = await Promise.all([
         clientsApi.getConnections().catch(() => ({ data: { connections: [] } })),
         invoicesApi.listWorkspaceInvoices({ limit: 100 }).catch(() => ({ data: { invoices: [] } })),
+        clientsApi.getInvitations().catch(() => ({ data: { invitations: [] } })),
       ]);
 
       const conns = connRes?.data?.connections || connRes?.connections || [];
       const invoices = invRes?.data?.invoices || invRes?.invoices || [];
+      const invitations = inviteRes?.data?.invitations || inviteRes?.invitations || [];
 
       // Aggregate client directory map by lowercase email
       const clientMap = new Map();
 
-      // 1. Add connected clients
+      // 1. Add invited & onboarded clients (guarantees every onboarded client remains visible)
+      invitations.forEach((inv) => {
+        if (!inv.email) return;
+        const email = inv.email.toLowerCase();
+        const accepted = inv.acceptedByUser;
+        const displayName =
+          inv.clientName ||
+          accepted?.fullName ||
+          accepted?.username ||
+          email.split('@')[0];
+        const displayCompany =
+          inv.company ||
+          accepted?.clientProfile?.billingAddress ||
+          '';
+
+        clientMap.set(email, {
+          id: accepted?.id || inv.id,
+          invitationId: inv.id,
+          name: displayName,
+          email,
+          company: displayCompany,
+          isRegistered: Boolean(accepted || inv.status === 'ACCEPTED'),
+          invoicesCount: 0,
+          totalBilled: 0,
+          outstandingBalance: 0,
+          status: inv.status === 'ACCEPTED' ? 'ACTIVE' : 'INVITED',
+        });
+      });
+
+      // 2. Add connected clients
       conns.forEach((c) => {
         if (c.clientUser && c.clientUser.email) {
           const email = c.clientUser.email.toLowerCase();
+          const existing = clientMap.get(email);
           clientMap.set(email, {
             id: c.clientUser.id,
-            name: c.clientUser.fullName || c.clientUser.username || 'Client User',
+            name: c.clientUser.fullName || c.clientUser.username || existing?.name || 'Client User',
             email,
-            company: c.clientUser.clientProfile?.billingAddress || '',
+            company: c.clientUser.clientProfile?.billingAddress || existing?.company || '',
             isRegistered: true,
-            invoicesCount: 0,
-            totalBilled: 0,
-            outstandingBalance: 0,
+            invoicesCount: existing?.invoicesCount || 0,
+            totalBilled: existing?.totalBilled || 0,
+            outstandingBalance: existing?.outstandingBalance || 0,
             status: 'ACTIVE',
           });
         }
       });
 
-      // 2. Add or update with invoiced client metrics
+      // 3. Add or update with invoiced client metrics
       invoices.forEach((inv) => {
         if (!inv.clientEmail) return;
         const email = inv.clientEmail.toLowerCase();
         const existing = clientMap.get(email) || {
           id: inv.clientUserId || null,
-          name: inv.clientName || 'Invoiced Client',
+          name: inv.clientName || email.split('@')[0],
           email,
           company: '',
           isRegistered: Boolean(inv.clientUserId),
@@ -90,6 +122,9 @@ export const ClientsPage = () => {
           status: inv.clientUserId ? 'ACTIVE' : 'INVITED',
         };
 
+        if (inv.clientName && (!existing.name || existing.name === email.split('@')[0])) {
+          existing.name = inv.clientName;
+        }
         existing.invoicesCount += 1;
         existing.totalBilled += Number(inv.totalAmount || 0);
         existing.outstandingBalance += Number(inv.balanceDue || 0);
@@ -111,8 +146,8 @@ export const ClientsPage = () => {
     fetchClientDirectory();
   }, []);
 
-  const handleAddClientSubmit = async (e) => {
-    e.preventDefault();
+  const handleAddClientSubmit = async (e, shouldInvoice = false) => {
+    if (e && e.preventDefault) e.preventDefault();
     if (!newClientEmail.trim() || !newClientName.trim()) {
       toast.error('Validation Error', 'Client name and email address are required.');
       return;
@@ -120,22 +155,30 @@ export const ClientsPage = () => {
 
     setSavingClient(true);
     try {
-      // Auto-dispatch invitation / registration email to the client
-      await clientsApi.sendInvitation(newClientEmail.trim());
+      const email = newClientEmail.trim().toLowerCase();
+      const name = newClientName.trim();
+      const company = newClientCompany.trim();
+
+      // Dispatch invitation & register client in database directory
+      await clientsApi.sendInvitation({
+        email,
+        clientName: name,
+        company,
+      });
+
       toast.success(
-        'Client Added & Invited',
-        `Invitation sent to ${newClientEmail}. You can now issue invoices immediately.`
+        'Client Added to Directory',
+        `${name} (${email}) has been added to your client directory.`
       );
       setShowAddModal(false);
-      const name = newClientName;
-      const email = newClientEmail;
       setNewClientName('');
       setNewClientEmail('');
       setNewClientCompany('');
       await fetchClientDirectory();
 
-      // Offer to create first invoice
-      navigate(`/business/invoices?create=true&clientName=${encodeURIComponent(name)}&clientEmail=${encodeURIComponent(email)}`);
+      if (shouldInvoice) {
+        navigate(`/business/invoices?create=true&clientName=${encodeURIComponent(name)}&clientEmail=${encodeURIComponent(email)}`);
+      }
     } catch (err) {
       toast.error('Failed to Add Client', err.message);
     } finally {
@@ -162,7 +205,7 @@ export const ClientsPage = () => {
             Client Directory
           </h1>
           <p className="text-xs text-[#8E9297] font-medium mt-1">
-            Authoritative registry of clients invoiced by your business with real-time billing metrics
+            Authoritative registry of clients onboarded by your business with real-time billing metrics
           </p>
         </div>
 
@@ -312,7 +355,7 @@ export const ClientsPage = () => {
         <EmptyState
           icon={Users}
           title="No clients found in directory"
-          description="Clients will appear here automatically as soon as you create invoices for them, or you can add a client contact directly."
+          description="Clients onboarded or invoiced will appear here permanently. Click below to add a new client."
           actionLabel="Add Your First Client"
           onAction={() => setShowAddModal(true)}
         />
@@ -351,16 +394,33 @@ export const ClientsPage = () => {
           />
 
           <p className="text-[11px] text-[#8E9297]">
-            When you create an invoice, an onboarding invitation will be automatically dispatched to this email address. Once the client registers or logs in with this email, their account will automatically link with your invoices.
+            This client will be saved permanently to your client directory. They will also receive an invitation email to connect to your business portal.
           </p>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-[#E8E4DC]">
-            <Button variant="secondary" size="sm" onClick={() => setShowAddModal(false)}>
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-[#E8E4DC]">
+            <Button variant="secondary" size="sm" type="button" onClick={() => setShowAddModal(false)}>
               Cancel
             </Button>
-            <Button variant="primary" size="sm" type="submit" loading={savingClient}>
-              Save & Proceed to Invoice
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                type="button"
+                onClick={(e) => handleAddClientSubmit(e, false)}
+                loading={savingClient}
+              >
+                Save Client
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                type="button"
+                onClick={(e) => handleAddClientSubmit(e, true)}
+                loading={savingClient}
+              >
+                Save & Invoice
+              </Button>
+            </div>
           </div>
         </form>
       </Modal>

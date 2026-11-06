@@ -209,9 +209,15 @@ async function resolveClientUser({
         data: {
           businessUserId,
           email: normalizedEmail,
+          clientName: clientName || null,
           tokenHash,
           expiresAt,
         },
+      });
+    } else if (clientName && !existingInvitation.clientName) {
+      await prisma.invitation.update({
+        where: { id: existingInvitation.id },
+        data: { clientName },
       });
     }
 
