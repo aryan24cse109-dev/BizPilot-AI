@@ -8,6 +8,7 @@ export async function getBusinessProfile(userId) {
     select: {
       accountCategory: true,
       businessProfile: true,
+      fullName: true,
     },
   });
 
@@ -16,7 +17,13 @@ export async function getBusinessProfile(userId) {
   }
 
   if (!user.businessProfile) {
-    throw new ApiError(404, "Business profile not found.");
+    return await prisma.businessProfile.create({
+      data: {
+        userId,
+        businessName: `${user.fullName}'s Business`,
+        businessType: "STARTUP",
+      },
+    });
   }
 
   return user.businessProfile;

@@ -22,21 +22,34 @@ export async function verifyGoogleCredential(credential) {
 
     payload = ticket.getPayload();
   } catch (err) {
-    if (
-      env.NODE_ENV !== "production" &&
-      credential &&
-      typeof credential === "string" &&
-      credential.includes("@")
-    ) {
-      const email = credential.toLowerCase().trim();
-      return {
-        googleSubject: `dev_google_${crypto.createHash("sha256").update(email).digest("hex").slice(0, 24)}`,
-        email,
-        fullName: email
-          .split("@")[0]
-          .replace(/[._-]/g, " ")
-          .replace(/\b\w/g, (c) => c.toUpperCase()),
-      };
+    if (env.NODE_ENV !== "production" && credential && typeof credential === "string") {
+      let email = null;
+      if (credential.includes("@")) {
+        email = credential.toLowerCase().trim();
+      } else {
+        try {
+          const parts = credential.split(".");
+          if (parts.length >= 2) {
+            const decoded = JSON.parse(Buffer.from(parts[1], "base64").toString("utf8"));
+            if (decoded && decoded.email) {
+              email = decoded.email.toLowerCase().trim();
+            }
+          }
+        } catch {
+          // ignore parsing error
+        }
+      }
+
+      if (email) {
+        return {
+          googleSubject: `dev_google_${crypto.createHash("sha256").update(email).digest("hex").slice(0, 24)}`,
+          email,
+          fullName: email
+            .split("@")[0]
+            .replace(/[._-]/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase()),
+        };
+      }
     }
     throw new ApiError(401, "Google credential is invalid or expired.");
   }
