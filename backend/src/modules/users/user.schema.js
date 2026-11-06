@@ -26,6 +26,13 @@ export const onboardingSchema = z.discriminatedUnion("accountCategory", [
     city: optionalText(100),
     state: optionalText(100),
     postalCode: optionalText(20),
+
+    // Bank settlement credentials for receiving client payments
+    bankAccountName: optionalText(150),
+    bankAccountNumber: optionalText(50),
+    bankIfscCode: optionalText(20),
+    bankName: optionalText(100),
+    upiId: optionalText(100),
   }),
 
   z.object({

@@ -26,7 +26,12 @@ export const SettingsPage = () => {
     city: user?.businessProfile?.city || '',
     state: user?.businessProfile?.state || '',
     country: user?.businessProfile?.country || 'India',
-    paymentInstructions: '',
+    bankAccountName: user?.businessProfile?.bankAccountName || '',
+    bankName: user?.businessProfile?.bankName || '',
+    bankAccountNumber: user?.businessProfile?.bankAccountNumber || '',
+    bankIfscCode: user?.businessProfile?.bankIfscCode || '',
+    upiId: user?.businessProfile?.upiId || '',
+    paymentInstructions: user?.businessProfile?.paymentInstructions || '',
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -46,6 +51,12 @@ export const SettingsPage = () => {
             city: profile.city || prev.city,
             state: profile.state || prev.state,
             country: profile.country || prev.country,
+            bankAccountName: profile.bankAccountName || prev.bankAccountName,
+            bankName: profile.bankName || prev.bankName,
+            bankAccountNumber: profile.bankAccountNumber || prev.bankAccountNumber,
+            bankIfscCode: profile.bankIfscCode || prev.bankIfscCode,
+            upiId: profile.upiId || prev.upiId,
+            paymentInstructions: profile.paymentInstructions || prev.paymentInstructions,
           }));
         }
       } catch (err) {
@@ -64,12 +75,25 @@ export const SettingsPage = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      // Backend provides GET /business/profile; updates are persisted during onboarding or stored in workspace session
-      await new Promise((resolve) => setTimeout(resolve, 400));
+      await businessApi.updateProfile({
+        businessName: profileData.businessName,
+        businessType: profileData.businessType,
+        gstin: profileData.taxId || null,
+        addressLine1: profileData.addressLine1 || null,
+        city: profileData.city || null,
+        state: profileData.state || null,
+        country: profileData.country || 'India',
+        bankAccountName: profileData.bankAccountName || null,
+        bankName: profileData.bankName || null,
+        bankAccountNumber: profileData.bankAccountNumber || null,
+        bankIfscCode: profileData.bankIfscCode ? profileData.bankIfscCode.toUpperCase() : null,
+        upiId: profileData.upiId || null,
+        paymentInstructions: profileData.paymentInstructions || null,
+      });
       setSaved(true);
-      toast.success('Settings Saved', 'Business profile and payment instructions updated successfully.');
+      toast.success('Settings Saved', 'Business profile and bank settlement details updated successfully.');
     } catch (err) {
-      toast.error('Update Failed', err.message || 'Failed to update business profile.');
+      toast.error('Update Failed', err?.response?.data?.message || err.message || 'Failed to update business profile.');
     } finally {
       setSaving(false);
     }
@@ -148,6 +172,61 @@ export const SettingsPage = () => {
             value={profileData.addressLine1 || ''}
             onChange={handleChange}
           />
+
+          {/* Bank Settlement Credentials */}
+          <div className="pt-4 border-t border-[#E8E4DC] space-y-4">
+            <div>
+              <h4 className="text-xs font-bold text-[#1C1D22] uppercase tracking-wider flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-emerald-600" />
+                Bank Settlement Credentials
+              </h4>
+              <p className="text-[11px] text-[#8E9297] mt-0.5">
+                Bank account and UPI details where client payments and payouts settle.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Account Holder Name"
+                name="bankAccountName"
+                value={profileData.bankAccountName || ''}
+                onChange={handleChange}
+                placeholder="e.g. Acme Corp Solutions"
+              />
+              <Input
+                label="Bank Name"
+                name="bankName"
+                value={profileData.bankName || ''}
+                onChange={handleChange}
+                placeholder="e.g. HDFC Bank"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Account Number"
+                name="bankAccountNumber"
+                value={profileData.bankAccountNumber || ''}
+                onChange={handleChange}
+                placeholder="e.g. 50100234567890"
+              />
+              <Input
+                label="IFSC Code"
+                name="bankIfscCode"
+                value={profileData.bankIfscCode || ''}
+                onChange={handleChange}
+                placeholder="e.g. HDFC0001234"
+              />
+            </div>
+
+            <Input
+              label="UPI ID / VPA"
+              name="upiId"
+              value={profileData.upiId || ''}
+              onChange={handleChange}
+              placeholder="e.g. business@okaxis"
+            />
+          </div>
 
           <div>
             <label className="block text-xs font-bold text-[#1C1D22] mb-1.5">

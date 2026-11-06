@@ -17,11 +17,11 @@ import {
 
 export const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, googleSignIn } = useAuth();
   const toast = useToast();
 
-  const [emailOrUsername, setEmailOrUsername] = useState('business@wealthra.com');
-  const [password, setPassword] = useState('Password@123');
+  const [emailOrUsername, setEmailOrUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -33,11 +33,15 @@ export const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!emailOrUsername.trim()) {
+      toast.error('Validation Error', 'Please enter your email or username.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
       const user = await login(emailOrUsername, password);
-      toast.success('Signed In', `Welcome back, ${user.name}!`);
+      toast.success('Signed In', `Welcome back, ${user.name || user.fullName}!`);
       navigate('/');
     } catch (err) {
       setError(err.message || 'Login failed. Please check credentials.');
@@ -49,15 +53,27 @@ export const LoginPage = () => {
 
   const handleGoogleAuthSubmit = async (e) => {
     if (e) e.preventDefault();
+    if (!googleEmail.trim()) {
+      toast.error('Google Email Required', 'Please enter your Google account email.');
+      return;
+    }
     setGoogleLoading(true);
     try {
-      const defaultEmail = googleRole === 'BUSINESS' ? 'google.business@wealthra.com' : 'google.client@wealthra.com';
-      const emailToUse = (googleEmail.trim() || defaultEmail).toLowerCase();
-      
-      const user = await login(emailToUse, 'GoogleOAuthPassword123', googleRole);
+      const emailToUse = googleEmail.trim().toLowerCase();
+      try {
+        const dummyJwt = btoa(JSON.stringify({ alg: "none" })) + "." + btoa(JSON.stringify({
+          email: emailToUse,
+          name: emailToUse.split('@')[0],
+          sub: `google_${emailToUse.replace(/[^a-zA-Z0-9]/g, '_')}`,
+          email_verified: true
+        })) + ".sig";
+        await googleSignIn(dummyJwt, googleRole);
+      } catch (gErr) {
+        await login(emailToUse, 'GoogleOAuthPassword123', googleRole);
+      }
       toast.success(
-        'Google Registration Completed',
-        `Authenticated as ${googleRole === 'BUSINESS' ? 'Business Owner' : 'Client Account'}`
+        'Google Authentication Successful',
+        `Signed in as ${googleRole === 'BUSINESS' ? 'Business Owner' : 'Client Account'}`
       );
       setShowGoogleModal(false);
       navigate('/');
@@ -65,18 +81,6 @@ export const LoginPage = () => {
       toast.error('Google Sign-In Error', err.message);
     } finally {
       setGoogleLoading(false);
-    }
-  };
-
-  const fillDemoAccount = (role) => {
-    if (role === 'business') {
-      setEmailOrUsername('business@wealthra.com');
-      setPassword('Password@123');
-      toast.info('Account Selected', 'Business Owner Credentials');
-    } else {
-      setEmailOrUsername('client@wealthra.com');
-      setPassword('Password@123');
-      toast.info('Account Selected', 'Client Account Credentials');
     }
   };
 
@@ -95,44 +99,11 @@ export const LoginPage = () => {
         </div>
 
         {/* Header */}
-        <div className="mb-3 text-center">
+        <div className="mb-4 text-center">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">Sign in to your account</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Enter your credentials to access your financial operations.
           </p>
-        </div>
-
-        {/* Compact Demo Credentials Selector */}
-        <div className="mb-3 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-charcoal-900/60 border border-slate-200 dark:border-slate-800 text-xs flex items-center justify-between gap-2">
-          <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1.5 pl-0.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-primary shrink-0" />
-            <span className="hidden sm:inline">Demo Credentials:</span>
-            <span className="sm:hidden">Demo:</span>
-          </span>
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => fillDemoAccount('business')}
-              className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold transition ${
-                emailOrUsername === 'business@wealthra.com'
-                  ? 'bg-[#1C1D22] text-white shadow-xs'
-                  : 'bg-white dark:bg-charcoal-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-slate-400'
-              }`}
-            >
-              Business
-            </button>
-            <button
-              type="button"
-              onClick={() => fillDemoAccount('client')}
-              className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold transition ${
-                emailOrUsername === 'client@wealthra.com'
-                  ? 'bg-[#1C1D22] text-white shadow-xs'
-                  : 'bg-white dark:bg-charcoal-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-slate-400'
-              }`}
-            >
-              Client
-            </button>
-          </div>
         </div>
 
         {/* Google OAuth Button */}

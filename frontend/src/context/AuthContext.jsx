@@ -41,7 +41,10 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (emailOrUsername, password, roleHint) => {
-    const email = (emailOrUsername || 'business@wealthra.com').trim();
+    if (!emailOrUsername || !emailOrUsername.trim()) {
+      throw new Error('Email or username is required.');
+    }
+    const email = emailOrUsername.trim();
     const accountCategory = (
       roleHint ||
       (email.toLowerCase().includes('client')
@@ -104,7 +107,9 @@ export const AuthProvider = ({ children }) => {
       setUser(registeredUser);
       return registeredUser;
     }
-    return login(formData.email || formData.businessEmail, 'Password@123', formData.accountCategory);
+    const email = formData.email || formData.businessEmail;
+    if (!email) throw new Error('Email is required for registration.');
+    return login(email, formData.password || '', formData.accountCategory);
   };
 
   const logout = async () => {

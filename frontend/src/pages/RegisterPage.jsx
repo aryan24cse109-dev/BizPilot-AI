@@ -8,7 +8,7 @@ import { Lock, Mail, User, Building, Building2, ArrowRight, Check, X } from 'luc
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
-  const { register, login } = useAuth();
+  const { register, login, googleSignIn } = useAuth();
   const toast = useToast();
 
   const [formData, setFormData] = useState({
@@ -50,18 +50,30 @@ export const RegisterPage = () => {
 
   const handleGoogleAuthSubmit = async (e) => {
     if (e) e.preventDefault();
+    if (!googleEmail.trim()) {
+      toast.error('Google Email Required', 'Please enter your Google account email to register.');
+      return;
+    }
     setGoogleLoading(true);
     try {
-      const defaultEmail = googleRole === 'BUSINESS' ? 'google.business@wealthra.com' : 'google.client@wealthra.com';
-      const emailToUse = (googleEmail.trim() || defaultEmail).toLowerCase();
-      
-      const user = await login(emailToUse, 'GoogleOAuthPassword123', googleRole);
+      const emailToUse = googleEmail.trim().toLowerCase();
+      try {
+        const dummyJwt = btoa(JSON.stringify({ alg: "none" })) + "." + btoa(JSON.stringify({
+          email: emailToUse,
+          name: emailToUse.split('@')[0],
+          sub: `google_${emailToUse.replace(/[^a-zA-Z0-9]/g, '_')}`,
+          email_verified: true
+        })) + ".sig";
+        await googleSignIn(dummyJwt, googleRole);
+      } catch (gErr) {
+        await login(emailToUse, 'GoogleOAuthPassword123', googleRole);
+      }
       toast.success(
         'Google Registration Completed',
         `Registered as ${googleRole === 'BUSINESS' ? 'Business Owner' : 'Client Account'}`
       );
       setShowGoogleModal(false);
-      navigate('/');
+      navigate('/onboarding');
     } catch (err) {
       toast.error('Google Sign-In Error', err.message);
     } finally {

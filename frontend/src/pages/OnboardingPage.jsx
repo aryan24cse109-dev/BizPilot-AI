@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { authApi } from '../api/auth.api.js';
 import { Button } from '../components/common/Button.jsx';
 import { Input } from '../components/common/Input.jsx';
-import { Building2, User, Check, ArrowRight, ShieldCheck, Briefcase } from 'lucide-react';
+import { Building2, User, Check, ArrowRight, ShieldCheck, Briefcase, CreditCard } from 'lucide-react';
 
 export const OnboardingPage = () => {
   const navigate = useNavigate();
@@ -16,6 +17,14 @@ export const OnboardingPage = () => {
   const [businessName, setBusinessName] = useState(user?.businessProfile?.businessName || (user?.fullName ? `${user.fullName}'s Workspace` : ''));
   const [taxId, setTaxId] = useState('');
   const [currency, setCurrency] = useState('INR');
+
+  // Bank & Settlement credentials for receiving client payments
+  const [bankAccountName, setBankAccountName] = useState(user?.fullName || '');
+  const [bankName, setBankName] = useState('');
+  const [bankAccountNumber, setBankAccountNumber] = useState('');
+  const [bankIfscCode, setBankIfscCode] = useState('');
+  const [upiId, setUpiId] = useState('');
+
   const [submitting, setSubmitting] = useState(false);
 
   const handleComplete = async (e) => {
@@ -30,6 +39,11 @@ export const OnboardingPage = () => {
           currency: currency || 'INR',
           gstin: taxId || undefined,
           country: 'India',
+          bankAccountName: bankAccountName.trim() || undefined,
+          bankName: bankName.trim() || undefined,
+          bankAccountNumber: bankAccountNumber.trim() || undefined,
+          bankIfscCode: bankIfscCode.trim().toUpperCase() || undefined,
+          upiId: upiId.trim() || undefined,
         });
       } else {
         await authApi.onboarding({
@@ -43,8 +57,7 @@ export const OnboardingPage = () => {
       toast.success('Workspace Configured', `Welcome to Wealthra™ as a ${roleChoice === 'business' ? 'Business Owner' : 'Client'}!`);
       navigate(roleChoice === 'business' ? '/business' : '/portal');
     } catch (err) {
-      console.error('Onboarding failed:', err);
-      // If already onboarded, continue
+      console.error('Onboarding error:', err);
       setActiveRole(roleChoice);
       localStorage.setItem('bizpilot_active_role', roleChoice);
       navigate(roleChoice === 'business' ? '/business' : '/portal');
@@ -165,6 +178,56 @@ export const OnboardingPage = () => {
               onChange={(e) => setTaxId(e.target.value)}
               placeholder="29ABCDE1234F1Z5"
             />
+
+            {/* Bank settlement credentials */}
+            <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-emerald-primary" />
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                  Bank Settlement Credentials
+                </h4>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Provide your bank credentials so client invoice payments and payouts settle directly to your account.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Account Holder Name"
+                  value={bankAccountName}
+                  onChange={(e) => setBankAccountName(e.target.value)}
+                  placeholder="e.g. John Doe"
+                />
+                <Input
+                  label="Bank Name"
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                  placeholder="e.g. HDFC Bank"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Account Number"
+                  value={bankAccountNumber}
+                  onChange={(e) => setBankAccountNumber(e.target.value)}
+                  placeholder="e.g. 50100234567890"
+                />
+                <Input
+                  label="IFSC Code"
+                  value={bankIfscCode}
+                  onChange={(e) => setBankIfscCode(e.target.value.toUpperCase())}
+                  placeholder="e.g. HDFC0001234"
+                />
+              </div>
+
+              <Input
+                label="UPI ID / VPA (Optional)"
+                value={upiId}
+                onChange={(e) => setUpiId(e.target.value)}
+                placeholder="e.g. yourname@okaxis"
+              />
+            </div>
           </div>
         ) : (
           <div className="space-y-4 pt-2 border-t border-slate-200 dark:border-slate-800">

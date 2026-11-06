@@ -155,6 +155,13 @@ model BusinessProfile {
   state        String? @db.VarChar(100)
   postalCode   String? @db.VarChar(20)
 
+  // Bank & Settlement Credentials for receiving client payments
+  bankAccountName   String? @db.VarChar(150)
+  bankAccountNumber String? @db.VarChar(50)
+  bankIfscCode      String? @db.VarChar(20)
+  bankName          String? @db.VarChar(100)
+  upiId             String? @db.VarChar(100)
+
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 

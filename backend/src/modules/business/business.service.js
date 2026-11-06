@@ -21,3 +21,32 @@ export async function getBusinessProfile(userId) {
 
   return user.businessProfile;
 }
+
+export async function updateBusinessProfile(userId, data) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      accountCategory: true,
+      businessProfile: true,
+    },
+  });
+
+  if (!user || user.accountCategory !== "BUSINESS") {
+    throw new ApiError(403, "Business account required.");
+  }
+
+  const { id, userId: uId, createdAt, updatedAt, ...allowedFields } = data;
+
+  const profile = await prisma.businessProfile.upsert({
+    where: { userId },
+    update: allowedFields,
+    create: {
+      userId,
+      businessName: allowedFields.businessName || "My Business",
+      businessType: allowedFields.businessType || "STARTUP",
+      ...allowedFields,
+    },
+  });
+
+  return profile;
+}
