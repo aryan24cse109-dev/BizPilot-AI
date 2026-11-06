@@ -92,6 +92,13 @@ export const Sidebar = () => {
           Razorpay & PayPal Sandbox active with verifiable test transactions.
         </p>
       </div>
+
+      {/* Ownership Notice */}
+      <div className="pb-3 text-center">
+        <p className="text-[9px] text-[#F5C869] font-semibold tracking-wide uppercase">
+          Right to this project is owned by DEVRATOR
+        </p>
+      </div>
     </aside>
   );
 };

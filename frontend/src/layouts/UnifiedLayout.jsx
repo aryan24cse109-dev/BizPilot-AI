@@ -241,6 +241,16 @@ export const UnifiedLayout = () => {
               </div>
             )}
           </nav>
+
+          {/* Ownership Footer */}
+          <div className="pt-2.5 border-t border-[#2B2C33] mt-2 px-1 text-center shrink-0">
+            <p className="text-[10px] text-[#8E9297] font-medium leading-tight">
+              © {new Date().getFullYear()} Wealthra™
+            </p>
+            <p className="text-[9px] text-[#F5C869] font-bold mt-0.5 tracking-wide uppercase">
+              Right to this project is owned by DEVRATOR
+            </p>
+          </div>
         </div>
       </aside>
 

@@ -162,6 +162,13 @@ export const BusinessLayout = () => {
             <LogOut className="w-3.5 h-3.5" />
             <span>Sign Out</span>
           </button>
+
+          {/* Ownership Notice */}
+          <div className="pt-2 px-1 text-center">
+            <p className="text-[9px] text-[#F5C869] font-semibold tracking-wide uppercase">
+              Right to this project is owned by DEVRATOR
+            </p>
+          </div>
         </div>
       </aside>
 

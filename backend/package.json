@@ -1,7 +1,8 @@
 {
   "name": "@bizpilot/backend",
   "version": "1.0.0",
-  "description": "",
+  "author": "DEVRATOR",
+  "description": "Right to this project is owned by DEVRATOR",
   "main": "index.js",
   "directories": {
     "doc": "docs"

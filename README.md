@@ -92,3 +92,10 @@ npx vitest run
 - `invoice.test.js` (Sequential numbering, precision math, PDF generation, multi-tenant isolation)
 - `payment.test.js` (Order creation, signature verification, idempotency, partial payments)
 - `ai.test.js` (Hinglish/Hindi NLP parsing, interactive draft confirmation, verified DB queries)
+
+---
+
+## ⚖️ Ownership & Intellectual Property
+
+> **IMPORTANT NOTICE:**  
+> The right to this project is owned by **DEVRATOR**. All rights reserved.

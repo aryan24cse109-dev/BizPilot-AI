@@ -18,7 +18,7 @@ export const AuthLayout = () => {
 
       {/* Footer */}
       <footer className="py-2 text-center text-[11px] text-slate-500 dark:text-slate-400 shrink-0">
-        &copy; {new Date().getFullYear()} Wealthra™ Inc. Authoritative Business Invoicing & Settlement Platform.
+        &copy; {new Date().getFullYear()} Wealthra™. All rights to this project are owned by <span className="font-bold text-slate-700 dark:text-slate-200">DEVRATOR</span>.
       </footer>
     </div>
   );
