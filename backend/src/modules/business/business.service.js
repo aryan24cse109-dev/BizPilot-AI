@@ -22,6 +22,30 @@ export async function getBusinessProfile(userId) {
   return user.businessProfile;
 }
 
+const ALLOWED_BUSINESS_FIELDS = new Set([
+  "businessType",
+  "businessName",
+  "legalName",
+  "description",
+  "businessEmail",
+  "phone",
+  "website",
+  "gstin",
+  "country",
+  "currency",
+  "addressLine1",
+  "addressLine2",
+  "city",
+  "state",
+  "postalCode",
+  "bankAccountName",
+  "bankAccountNumber",
+  "bankIfscCode",
+  "bankName",
+  "upiId",
+  "paymentInstructions",
+]);
+
 export async function updateBusinessProfile(userId, data) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -35,16 +59,21 @@ export async function updateBusinessProfile(userId, data) {
     throw new ApiError(403, "Business account required.");
   }
 
-  const { id, userId: uId, createdAt, updatedAt, ...allowedFields } = data;
+  const cleanData = {};
+  for (const [key, val] of Object.entries(data || {})) {
+    if (ALLOWED_BUSINESS_FIELDS.has(key)) {
+      cleanData[key] = val === "" ? null : val;
+    }
+  }
 
   const profile = await prisma.businessProfile.upsert({
     where: { userId },
-    update: allowedFields,
+    update: cleanData,
     create: {
       userId,
-      businessName: allowedFields.businessName || "My Business",
-      businessType: allowedFields.businessType || "STARTUP",
-      ...allowedFields,
+      businessName: cleanData.businessName || "My Business",
+      businessType: cleanData.businessType || "STARTUP",
+      ...cleanData,
     },
   });
 

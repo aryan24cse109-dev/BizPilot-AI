@@ -161,6 +161,7 @@ model BusinessProfile {
   bankIfscCode      String? @db.VarChar(20)
   bankName          String? @db.VarChar(100)
   upiId             String? @db.VarChar(100)
+  paymentInstructions String? @db.Text
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
