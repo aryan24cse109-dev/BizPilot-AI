@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { messagesApi } from '../api/messages.api.js';
 import { clientsApi } from '../api/clients.api.js';
+import { invoicesApi } from '../api/invoices.api.js';
 import { Button } from '../components/common/Button.jsx';
 import { LoadingSpinner } from '../components/common/LoadingSpinner.jsx';
 import { EmptyState } from '../components/common/EmptyState.jsx';
@@ -16,7 +17,9 @@ import {
   CheckCheck,
   Search,
   Plus,
-  ArrowRight
+  ArrowRight,
+  ShieldCheck,
+  Clock
 } from 'lucide-react';
 
 export const MessagesPage = () => {
@@ -57,18 +60,20 @@ export const MessagesPage = () => {
     }
   };
 
-  const fetchMessages = async (convId) => {
+  const fetchMessages = async (convId, silent = false) => {
     if (!convId) return;
-    setLoadingMessages(true);
+    if (!silent) setLoadingMessages(true);
     try {
       const res = await messagesApi.getMessages(convId);
       const list = res?.data?.data || res?.data || [];
       setMessages(list);
     } catch (err) {
-      console.error('Error fetching messages:', err);
-      toast.error('Messages Error', err.message);
+      if (!silent) {
+        console.error('Error fetching messages:', err);
+        toast.error('Messages Error', err.message);
+      }
     } finally {
-      setLoadingMessages(false);
+      if (!silent) setLoadingMessages(false);
     }
   };
 
@@ -76,10 +81,52 @@ export const MessagesPage = () => {
     fetchConversations();
   }, []);
 
+  // URL query parameter support: /messages?recipient=...
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const recipientParam =
+      params.get('recipient') || params.get('recipientId') || params.get('clientId') || params.get('email');
+    if (recipientParam) {
+      handleStartConversationWith(recipientParam);
+    }
+  }, [location.search]);
+
   useEffect(() => {
     if (activeConvId) {
       fetchMessages(activeConvId);
     }
+  }, [activeConvId]);
+
+  // Live polling every 3.5 seconds for active conversation
+  useEffect(() => {
+    if (!activeConvId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await messagesApi.getMessages(activeConvId);
+        const list = res?.data?.data || res?.data || [];
+        setMessages((prev) => {
+          if (
+            list.length !== prev.length ||
+            (list.length > 0 && list[list.length - 1]?.id !== prev[prev.length - 1]?.id)
+          ) {
+            return list;
+          }
+          return prev;
+        });
+
+        // Background update conversation summaries
+        const convRes = await messagesApi.listConversations();
+        const convList = convRes?.data?.data || convRes?.data || [];
+        if (convList.length > 0) {
+          setConversations(convList);
+        }
+      } catch (e) {
+        // silent polling catch
+      }
+    }, 3500);
+
+    return () => clearInterval(interval);
   }, [activeConvId]);
 
   useEffect(() => {
@@ -113,27 +160,100 @@ export const MessagesPage = () => {
     setShowNewModal(true);
     setLoadingContacts(true);
     try {
-      const res = await clientsApi.getConnections();
-      const list = res?.data?.connections || res?.connections || [];
-      const partners = list
-        .map((c) => (c.businessUserId === user?.id ? c.clientUser : c.businessUser))
-        .filter(Boolean);
-      setContacts(partners);
+      const contactMap = new Map();
+
+      // 1. From connections
+      const connRes = await clientsApi.getConnections().catch(() => ({ data: { connections: [] } }));
+      const conns = connRes?.data?.connections || connRes?.connections || [];
+      conns.forEach((c) => {
+        const other = c.businessUserId === user?.id ? c.clientUser : c.businessUser;
+        if (other && other.email) {
+          const email = other.email.toLowerCase();
+          contactMap.set(email, {
+            id: other.id,
+            email,
+            name: other.businessProfile?.businessName || other.fullName || other.username || email,
+            role: other.accountCategory === 'BUSINESS' ? 'Business Partner' : 'Client',
+            company: other.clientProfile?.billingAddress || other.businessProfile?.legalName || '',
+          });
+        }
+      });
+
+      // 2. If business view, also load invited and invoiced clients
+      if (!isClientView) {
+        const [inviteRes, invRes] = await Promise.all([
+          clientsApi.getInvitations().catch(() => ({ data: { invitations: [] } })),
+          invoicesApi.listWorkspaceInvoices({ limit: 100 }).catch(() => ({ data: { invoices: [] } })),
+        ]);
+
+        const invitations = inviteRes?.data?.invitations || inviteRes?.invitations || [];
+        const invoices = invRes?.data?.invoices || invRes?.invoices || [];
+
+        invitations.forEach((inv) => {
+          if (!inv.email) return;
+          const email = inv.email.toLowerCase();
+          if (!contactMap.has(email)) {
+            contactMap.set(email, {
+              id: inv.acceptedByUser?.id || inv.email,
+              email,
+              name: inv.clientName || inv.acceptedByUser?.fullName || email.split('@')[0],
+              role: 'Onboarded Client',
+              company: inv.company || '',
+            });
+          }
+        });
+
+        invoices.forEach((inv) => {
+          if (!inv.clientEmail) return;
+          const email = inv.clientEmail.toLowerCase();
+          if (!contactMap.has(email)) {
+            contactMap.set(email, {
+              id: inv.clientUserId || email,
+              email,
+              name: inv.clientName || email.split('@')[0],
+              role: 'Invoiced Client',
+              company: '',
+            });
+          }
+        });
+      } else {
+        // Client view: load businesses from client invoices
+        const invRes = await invoicesApi.listClientInvoices().catch(() => ({ data: { invoices: [] } }));
+        const clientInvoices = invRes?.data?.invoices || invRes?.invoices || [];
+        clientInvoices.forEach((inv) => {
+          if (inv.businessUser && inv.businessUser.email) {
+            const email = inv.businessUser.email.toLowerCase();
+            if (!contactMap.has(email)) {
+              contactMap.set(email, {
+                id: inv.businessUser.id,
+                email,
+                name: inv.businessUser.businessProfile?.businessName || inv.businessUser.fullName || email,
+                role: 'Business Merchant',
+                company: inv.businessUser.businessProfile?.legalName || '',
+              });
+            }
+          }
+        });
+      }
+
+      setContacts(Array.from(contactMap.values()));
     } catch (err) {
       console.error('Failed to load contacts:', err);
+      toast.error('Contacts Error', err.message);
     } finally {
       setLoadingContacts(false);
     }
   };
 
-  const handleStartConversationWith = async (recipientId) => {
+  const handleStartConversationWith = async (recipient) => {
     try {
-      const res = await messagesApi.getOrCreateConversation(recipientId);
+      const res = await messagesApi.getOrCreateConversation(recipient);
       const conv = res?.data?.data || res?.data;
       if (conv?.id) {
         setShowNewModal(false);
-        await fetchConversations();
         setActiveConvId(conv.id);
+        await fetchConversations();
+        await fetchMessages(conv.id);
       }
     } catch (err) {
       toast.error('Could not start conversation', err.message);
@@ -351,24 +471,37 @@ export const MessagesPage = () => {
             </div>
 
             <p className="text-xs text-[#8E9297]">
-              Select a business partner or client connected to your account:
+              Select a client or business partner to message:
             </p>
 
             {loadingContacts ? (
               <LoadingSpinner text="Loading contacts..." />
             ) : contacts.length > 0 ? (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                 {contacts.map((contact) => (
                   <div
-                    key={contact.id}
-                    onClick={() => handleStartConversationWith(contact.id)}
-                    className="p-3 rounded-xl bg-[#FAF8F5] hover:bg-[#CFDDC8]/30 border border-[#E8E4DC] flex items-center justify-between cursor-pointer transition"
+                    key={contact.id || contact.email}
+                    onClick={() => handleStartConversationWith(contact.id || contact.email)}
+                    className="p-3 rounded-2xl bg-[#FAF8F5] hover:bg-[#CFDDC8]/30 border border-[#E8E4DC] flex items-center justify-between cursor-pointer transition"
                   >
-                    <div>
-                      <p className="text-xs font-bold text-[#1C1D22]">
-                        {contact.businessProfile?.businessName || contact.fullName || contact.username}
-                      </p>
-                      <p className="text-[10px] text-[#8E9297] font-mono">{contact.email}</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-[#CFDDC8] border border-[#B8CEB0] flex items-center justify-center font-bold text-xs text-[#1C1D22]">
+                        {contact.name.substring(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold text-[#1C1D22]">{contact.name}</p>
+                          {contact.role && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                              {contact.role}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-[#8E9297] font-mono">{contact.email}</p>
+                        {contact.company && (
+                          <p className="text-[10px] text-[#8E9297]">{contact.company}</p>
+                        )}
+                      </div>
                     </div>
                     <ArrowRight className="w-4 h-4 text-[#8E9297]" />
                   </div>
@@ -376,7 +509,7 @@ export const MessagesPage = () => {
               </div>
             ) : (
               <div className="p-6 text-center text-xs text-[#8E9297]">
-                No connected contacts found. Once you issue or receive an invoice, contacts appear here automatically.
+                No clients found. Add a client in your Client Directory or create an invoice to start messaging.
               </div>
             )}
 

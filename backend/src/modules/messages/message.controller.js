@@ -12,8 +12,9 @@ export class MessageController {
 
   static async getOrCreateConversation(req, res, next) {
     try {
-      const { recipientId } = req.body;
-      const conversation = await MessageService.getOrCreateConversation(req.user.id, recipientId);
+      const { recipientId, recipient, email } = req.body;
+      const target = recipientId || recipient || email;
+      const conversation = await MessageService.getOrCreateConversation(req.user.id, target);
       res.json({ success: true, data: conversation });
     } catch (err) {
       next(err);

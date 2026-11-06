@@ -2,19 +2,154 @@ import crypto from "node:crypto";
 import { prisma } from "../../config/database.js";
 import { ApiError } from "../../utils/ApiError.js";
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export class MessageService {
   /**
    * Get or create a conversation between two users
    */
-  static async getOrCreateConversation(user1Id, user2Id) {
-    if (!user1Id || !user2Id) {
-      throw new ApiError(400, "Both user IDs are required to establish a conversation.");
+  static async getOrCreateConversation(user1Id, recipient) {
+    if (!user1Id || !recipient) {
+      throw new ApiError(400, "Both user IDs or a valid recipient are required to establish a conversation.");
     }
+
+    if (user1Id === recipient) {
+      throw new ApiError(400, "Cannot start a conversation with yourself.");
+    }
+
+    let user2Id = recipient;
+
+    // 1. If recipient is an email address
+    if (typeof recipient === "string" && recipient.includes("@")) {
+      const normalizedEmail = recipient.toLowerCase().trim();
+      let targetUser = await prisma.user.findUnique({
+        where: { email: normalizedEmail },
+      });
+
+      if (!targetUser) {
+        // Find existing invitation or invoice to get client details
+        const invitation = await prisma.invitation.findFirst({
+          where: { email: normalizedEmail },
+        });
+        const invoice = await prisma.invoice.findFirst({
+          where: { clientEmail: normalizedEmail },
+        });
+
+        const clientName =
+          invitation?.clientName || invoice?.clientName || normalizedEmail.split("@")[0];
+
+        const usernameBase =
+          normalizedEmail
+            .split("@")[0]
+            .toLowerCase()
+            .replace(/[^a-z0-9_]/g, "")
+            .slice(0, 30) || "client";
+        const username = `${usernameBase}_${crypto.randomBytes(3).toString("hex")}`;
+
+        // Auto-provision client user account so messaging is immediate
+        targetUser = await prisma.user.create({
+          data: {
+            email: normalizedEmail,
+            username,
+            fullName: clientName,
+            accountCategory: "CLIENT",
+            status: "ACTIVE",
+            onboardingCompleted: true,
+          },
+        });
+
+        await prisma.clientProfile
+          .create({
+            data: {
+              userId: targetUser.id,
+              billingAddress: invitation?.company || "",
+            },
+          })
+          .catch(() => {});
+
+        // Link pending invitations & unlinked invoices
+        await prisma.invitation
+          .updateMany({
+            where: { email: normalizedEmail },
+            data: { status: "ACCEPTED", acceptedAt: new Date(), acceptedByUserId: targetUser.id },
+          })
+          .catch(() => {});
+
+        await prisma.invoice
+          .updateMany({
+            where: { clientEmail: normalizedEmail },
+            data: { clientUserId: targetUser.id },
+          })
+          .catch(() => {});
+      }
+
+      user2Id = targetUser.id;
+    } else {
+      // 2. Check if recipient is a user ID or invitation ID
+      let targetUser = null;
+      if (UUID_REGEX.test(recipient)) {
+        targetUser = await prisma.user.findUnique({
+          where: { id: recipient },
+        });
+      }
+
+      if (!targetUser) {
+        if (UUID_REGEX.test(recipient)) {
+          const invitation = await prisma.invitation.findUnique({
+            where: { id: recipient },
+          });
+          if (invitation) {
+            return this.getOrCreateConversation(user1Id, invitation.email);
+          }
+        }
+        throw new ApiError(404, "Recipient client or user could not be found.");
+      }
+
+      user2Id = targetUser.id;
+    }
+
     if (user1Id === user2Id) {
       throw new ApiError(400, "Cannot start a conversation with yourself.");
     }
 
-    // Normalized ordering
+    // Ensure active connection exists between the two users
+    await prisma.connection
+      .upsert({
+        where: {
+          businessUserId_clientUserId: {
+            businessUserId: user1Id,
+            clientUserId: user2Id,
+          },
+        },
+        update: { status: "ACTIVE" },
+        create: {
+          businessUserId: user1Id,
+          clientUserId: user2Id,
+          status: "ACTIVE",
+          acceptedAt: new Date(),
+        },
+      })
+      .catch(async () => {
+        await prisma.connection
+          .upsert({
+            where: {
+              businessUserId_clientUserId: {
+                businessUserId: user2Id,
+                clientUserId: user1Id,
+              },
+            },
+            update: { status: "ACTIVE" },
+            create: {
+              businessUserId: user2Id,
+              clientUserId: user1Id,
+              status: "ACTIVE",
+              acceptedAt: new Date(),
+            },
+          })
+          .catch(() => {});
+      });
+
+    // Normalized ordering for conversation pair
     const [u1, u2] = [user1Id, user2Id].sort();
 
     const existing = await prisma.$queryRawUnsafe(
@@ -180,6 +315,26 @@ export class MessageService {
       now,
       conversationId
     );
+
+    // Notify recipient in real-time
+    const otherUserId = conversation.user1Id === senderId ? conversation.user2Id : conversation.user1Id;
+    const sender = await prisma.user.findUnique({
+      where: { id: senderId },
+      select: { fullName: true, businessProfile: { select: { businessName: true } } },
+    });
+    const senderName = sender?.businessProfile?.businessName || sender?.fullName || "Contact";
+
+    await prisma.notification
+      .create({
+        data: {
+          userId: otherUserId,
+          type: "SYSTEM_ALERT",
+          title: `New message from ${senderName}`,
+          body: content.trim().length > 90 ? `${content.trim().slice(0, 87)}...` : content.trim(),
+          data: { conversationId, senderId },
+        },
+      })
+      .catch(() => {});
 
     return {
       id,

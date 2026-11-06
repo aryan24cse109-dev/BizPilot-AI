@@ -29,7 +29,8 @@ import {
   ExternalLink,
   Ban,
   Edit,
-  History
+  History,
+  MessageSquare
 } from 'lucide-react';
 
 export const InvoiceDetailsPage = () => {
@@ -241,6 +242,22 @@ export const InvoiceDetailsPage = () => {
         </button>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={() => {
+              const target = isBusiness
+                ? (invoice.clientUserId || invoice.clientEmail)
+                : invoice.businessUserId;
+              const path = isBusiness ? '/business/messages' : '/portal/messages';
+              navigate(
+                `${path}?recipient=${encodeURIComponent(target)}&email=${encodeURIComponent(invoice.clientEmail || '')}`
+              );
+            }}
+            className="p-2 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 text-xs font-semibold text-slate-300 border border-slate-700/60 transition flex items-center gap-1.5"
+            title={isBusiness ? "Message Client" : "Message Business"}
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-emerald-400" /> {isBusiness ? 'Message Client' : 'Message Business'}
+          </button>
+
           <button
             onClick={() => copyToClipboard(window.location.href, 'Invoice URL')}
             className="p-2 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 text-xs font-semibold text-slate-300 border border-slate-700/60 transition flex items-center gap-1.5"

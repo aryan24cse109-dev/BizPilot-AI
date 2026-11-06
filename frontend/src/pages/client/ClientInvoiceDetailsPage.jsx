@@ -155,7 +155,11 @@ export const ClientInvoiceDetailsPage = () => {
             variant="secondary"
             size="sm"
             icon={MessageSquare}
-            onClick={() => navigate(`/portal/messages?invoiceNumber=${invoice.invoiceNumber}`)}
+            onClick={() =>
+              navigate(
+                `/portal/messages?recipient=${encodeURIComponent(invoice.businessUserId)}`
+              )
+            }
           >
             Contact Vendor
           </Button>

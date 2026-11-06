@@ -337,9 +337,13 @@ export const ClientsPage = () => {
                         </button>
 
                         <button
-                          onClick={() => navigate('/business/messages')}
+                          onClick={() =>
+                            navigate(
+                              `/business/messages?recipient=${encodeURIComponent(c.id || c.email)}&name=${encodeURIComponent(c.name)}&email=${encodeURIComponent(c.email)}`
+                            )
+                          }
                           className="p-1.5 rounded-xl bg-[#FAF8F5] hover:bg-white text-slate-700 border border-[#E8E4DC] transition"
-                          title="Message Client"
+                          title={`Message ${c.name}`}
                         >
                           <MessageSquare className="w-3.5 h-3.5" />
                         </button>
