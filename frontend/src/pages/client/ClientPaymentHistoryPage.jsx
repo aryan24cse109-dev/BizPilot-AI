@@ -129,7 +129,7 @@ export const ClientPaymentHistoryPage = () => {
                       {p.businessUser?.businessProfile?.businessName || p.businessUser?.fullName || 'Issuing Business'}
                     </td>
                     <td className="py-3.5 px-4 font-mono text-[#8E9297] uppercase">
-                      {p.paymentMethod || 'UPI'}
+                      {p.provider === 'DUMMY' ? 'Demo Payment' : (p.paymentMethod || 'Razorpay')}
                     </td>
                     <td className="py-3.5 px-4 text-[#8E9297] font-medium">
                       {new Date(p.paymentDate).toLocaleString('en-IN', {

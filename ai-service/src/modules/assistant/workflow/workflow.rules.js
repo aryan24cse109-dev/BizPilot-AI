@@ -2,6 +2,53 @@
 import { WORKFLOW_ACTIONS } from '../../../utils/constants.js';
 
 export const WORKFLOW_RULES = Object.freeze({
+  // Retrieval actions
+  [WORKFLOW_ACTIONS.LIST_INVOICES]: {
+    required: [],
+    requiredAnyOf: [],
+    description: 'List all invoices with optional pagination and filters.'
+  },
+  [WORKFLOW_ACTIONS.LIST_PENDING_INVOICES]: {
+    required: [],
+    requiredAnyOf: [],
+    description: 'List invoices that are pending payment.'
+  },
+  [WORKFLOW_ACTIONS.LIST_OVERDUE_INVOICES]: {
+    required: [],
+    requiredAnyOf: [],
+    description: 'List invoices that are overdue.'
+  },
+  [WORKFLOW_ACTIONS.LIST_DRAFT_INVOICES]: {
+    required: [],
+    requiredAnyOf: [],
+    description: 'List draft invoices.'
+  },
+  [WORKFLOW_ACTIONS.LIST_PAID_INVOICES]: {
+    required: [],
+    requiredAnyOf: [],
+    description: 'List invoices that are fully paid.'
+  },
+  [WORKFLOW_ACTIONS.LIST_PARTIALLY_PAID_INVOICES]: {
+    required: [],
+    requiredAnyOf: [],
+    description: 'List invoices with partial payments.'
+  },
+  [WORKFLOW_ACTIONS.GET_CLIENT_INVOICES]: {
+    required: [],
+    requiredAnyOf: [['clientName', 'clientEmail']],
+    description: 'List invoices for a specific client.'
+  },
+  [WORKFLOW_ACTIONS.GET_PAYMENT_SUMMARY]: {
+    required: [],
+    requiredAnyOf: [],
+    description: 'Get aggregated payment summary.'
+  },
+  [WORKFLOW_ACTIONS.GET_CLIENT_PAYMENT_SUMMARY]: {
+    required: [],
+    requiredAnyOf: [['clientName', 'clientEmail']],
+    description: 'Get payment summary for a specific client.'
+  },
+
   [WORKFLOW_ACTIONS.GET_INVOICE]: {
     required: [],
     requiredAnyOf: [],

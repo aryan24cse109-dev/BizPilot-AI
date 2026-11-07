@@ -8,7 +8,8 @@ import { getWorkflowRule } from './workflow.rules.js';
 
 import {
   normalizeWorkflowParameters,
-  hasMeaningfulValue
+  hasMeaningfulValue,
+  validateInvoiceItems
 } from './workflow.normalizer.js';
 
 export class WorkflowInterpretationError extends Error {
@@ -112,10 +113,21 @@ export const interpretWorkflow = (assistantResponse) => {
     );
   }
 
-  const parameters = normalizeWorkflowParameters({
-    parameters: assistantResponse.workflow.parameters,
-    entities: assistantResponse.entities
-  });
+  let parameters;
+  try {
+    parameters = normalizeWorkflowParameters({
+      parameters: assistantResponse.workflow.parameters,
+      entities: assistantResponse.entities
+    });
+    if (action === 'CREATE_INVOICE_DRAFT' && parameters.items !== undefined) {
+      validateInvoiceItems(parameters.items);
+    }
+  } catch (error) {
+    throw new WorkflowInterpretationError(
+      'Invoice workflow parameters are invalid.',
+      { reason: error.message }
+    );
+  }
 
   const missingRequirements = getMissingRequirements(
     action,

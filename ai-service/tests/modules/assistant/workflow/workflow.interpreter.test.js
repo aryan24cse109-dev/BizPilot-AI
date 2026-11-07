@@ -102,6 +102,86 @@ test('asks for client details when creating an invoice draft', () => {
   assert.match(result.response.clarificationQuestion, /client/i);
 });
 
+test('normalizes lineItems into canonical items', () => {
+  const result = interpretWorkflow(createResponse({
+    action: 'CREATE_INVOICE_DRAFT',
+    parameters: {
+      clientName: 'Semser Study',
+      lineItems: [{
+        description: 'Website Development',
+        quantity: 1,
+        unitPrice: 15000
+      }]
+    }
+  }));
+
+  assert.deepEqual(result.response.workflow.parameters.items, [{
+    description: 'Website Development',
+    quantity: 1,
+    unitPrice: 15000
+  }]);
+  assert.equal(
+    Object.hasOwn(result.response.workflow.parameters, 'lineItems'),
+    false
+  );
+});
+
+test('preserves canonical items', () => {
+  const items = [{
+    description: 'Website Development',
+    quantity: 1,
+    unitPrice: 15000
+  }];
+  const result = interpretWorkflow(createResponse({
+    action: 'CREATE_INVOICE_DRAFT',
+    parameters: {
+      clientName: 'Semser Study',
+      items
+    }
+  }));
+
+  assert.deepEqual(result.response.workflow.parameters.items, items);
+});
+
+test('rejects conflicting items and lineItems', () => {
+  assert.throws(
+    () => interpretWorkflow(createResponse({
+      action: 'CREATE_INVOICE_DRAFT',
+      parameters: {
+        clientName: 'Semser Study',
+        items: [{
+          description: 'Website Development',
+          quantity: 1,
+          unitPrice: 15000
+        }],
+        lineItems: [{
+          description: 'Consulting',
+          quantity: 1,
+          unitPrice: 1000
+        }]
+      }
+    })),
+    WorkflowInterpretationError
+  );
+});
+
+test('rejects invalid invoice item values', () => {
+  assert.throws(
+    () => interpretWorkflow(createResponse({
+      action: 'CREATE_INVOICE_DRAFT',
+      parameters: {
+        clientName: 'Semser Study',
+        items: [{
+          description: 'Website Development',
+          quantity: 0,
+          unitPrice: -1
+        }]
+      }
+    })),
+    WorkflowInterpretationError
+  );
+});
+
 test('asks for invoice information before sending an invoice', () => {
   const result = interpretWorkflow(createResponse({
     action: 'SEND_INVOICE'

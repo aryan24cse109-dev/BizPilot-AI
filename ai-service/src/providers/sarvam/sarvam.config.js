@@ -3,7 +3,7 @@ export const SARVAM_CONFIG = Object.freeze({
 
   chatCompletionsPath: '/v1/chat/completions',
 
-  defaultModel: 'sarvam-105b-conversations',
+  defaultModel: 'sarvam-105b',
 
   defaultTemperature: 0.2,
 

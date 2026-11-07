@@ -1,5 +1,6 @@
 
 import { z } from 'zod';
+import { randomUUID } from 'node:crypto';
 
 import { env } from '../../config/env.js';
 import { getProviderConfig } from '../../config/provider.config.js';
@@ -24,12 +25,32 @@ const completionSchema = z.object({
   messages: z.array(messageSchema).min(1).max(100),
   model: z.string().min(1).optional(),
   temperature: z.number().min(0).max(2).optional(),
-  maxTokens: z.number().int().min(1).max(8192).optional()
+  maxTokens: z.number().int().min(1).max(8192).optional(),
+  responseFormat: z.object({
+    type: z.enum(['text', 'json_object', 'json_schema']),
+    json_schema: z.record(z.string(), z.unknown()).optional()
+  }).strict().optional()
 }).strict();
 
 const normalizeResponse = (response, requestedModel) => {
   const choice = response?.choices?.[0];
   const content = choice?.message?.content;
+  const finishReason = choice?.finish_reason ?? null;
+  const requestId = response?.id ?? null;
+
+  if (finishReason === 'length') {
+    throw new ApiError({
+      statusCode: HTTP_STATUS.BAD_GATEWAY,
+      message: 'Groq returned a truncated assistant response.',
+      code: ERROR_CODES.AI_RESPONSE_INVALID,
+      details: {
+        provider: 'groq',
+        stage: 'truncation',
+        finishReason,
+        requestId
+      }
+    });
+  }
 
   if (typeof content !== 'string' || !content.trim()) {
     throw new ApiError({
@@ -37,7 +58,10 @@ const normalizeResponse = (response, requestedModel) => {
       message: 'Groq returned an invalid or empty response.',
       code: ERROR_CODES.AI_RESPONSE_INVALID,
       details: {
-        provider: 'groq'
+        provider: 'groq',
+        stage: 'empty_response',
+        finishReason,
+        requestId
       }
     });
   }
@@ -46,7 +70,7 @@ const normalizeResponse = (response, requestedModel) => {
     provider: 'groq',
     model: response.model ?? requestedModel,
     content: content.trim(),
-    finishReason: choice.finish_reason ?? null,
+    finishReason,
 
     usage: response.usage
       ? {
@@ -56,7 +80,7 @@ const normalizeResponse = (response, requestedModel) => {
         }
       : null,
 
-    requestId: response.id ?? null
+    requestId
   };
 };
 
@@ -71,12 +95,22 @@ const parseProviderError = async (response) => {
         body?.message ??
         'Groq API request failed.'
     };
+
   } catch {
     return {
       providerStatus: response.status,
       providerMessage: 'Groq API request failed.'
     };
   }
+};
+
+const providerCategoryForStatus = (status) => {
+  if (status === 401) return 'authentication';
+  if (status === 403) return 'permission';
+  if (status === 404) return 'route_or_model';
+  if (status === 429) return 'rate_limit';
+  if (status >= 500) return 'upstream';
+  return 'request';
 };
 
 export const createGroqProvider = ({
@@ -121,10 +155,12 @@ export const createGroqProvider = ({
       messages,
       model: requestedModel,
       temperature,
-      maxTokens
+      maxTokens,
+      responseFormat
     } = parsedInput.data;
 
     const selectedModel = requestedModel ?? model;
+    const requestId = randomUUID();
 
     const url = new URL(
       GROQ_CONFIG.chatCompletionsPath,
@@ -154,7 +190,11 @@ export const createGroqProvider = ({
             temperature ?? GROQ_CONFIG.defaultTemperature,
 
           max_completion_tokens:
-            maxTokens ?? GROQ_CONFIG.defaultMaxTokens
+            maxTokens ?? GROQ_CONFIG.defaultMaxTokens,
+
+          ...(responseFormat
+            ? { response_format: responseFormat }
+            : {})
         }),
 
         signal: controller.signal
@@ -165,7 +205,11 @@ export const createGroqProvider = ({
 
         logger.warn('Groq API returned an error', {
           provider: 'groq',
-          providerStatus: response.status
+          providerStatus: response.status,
+          providerCategory: providerCategoryForStatus(response.status),
+          providerMessage: String(providerError.providerMessage).slice(0, 200),
+          model: selectedModel,
+          requestId
         });
 
         throw new ApiError({
@@ -180,7 +224,9 @@ export const createGroqProvider = ({
 
           details: {
             provider: 'groq',
-            providerStatus: providerError.providerStatus
+            providerStatus: providerError.providerStatus,
+            providerCategory: providerCategoryForStatus(providerError.providerStatus),
+            requestId
           }
         });
       }
@@ -217,7 +263,8 @@ export const createGroqProvider = ({
         code: ERROR_CODES.AI_PROVIDER_UNAVAILABLE,
         details: {
           provider: 'groq',
-          reason: 'network_error'
+          reason: 'network_error',
+          requestId
         }
       });
 

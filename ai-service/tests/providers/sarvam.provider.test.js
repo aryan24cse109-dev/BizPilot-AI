@@ -81,6 +81,26 @@ test('Sarvam provider sends a valid chat completion request', async () => {
   assert.equal(result.usage.totalTokens, 15);
 });
 
+test('Sarvam forwards JSON response format for structured responses', async () => {
+  let capturedBody;
+  const provider = createSarvamProvider({
+    apiKey: 'test-api-key',
+    fetchImpl: async (_url, options) => {
+      capturedBody = JSON.parse(options.body);
+      return createSuccessResponse();
+    }
+  });
+
+  await provider.generateChatCompletion({
+    messages: [{ role: 'user', content: 'Return JSON.' }],
+    responseFormat: { type: 'json_object' }
+  });
+
+  assert.deepEqual(capturedBody.response_format, {
+    type: 'json_object'
+  });
+});
+
 test('Sarvam provider rejects invalid messages', async () => {
   const provider = createSarvamProvider({
     apiKey: 'test-api-key',

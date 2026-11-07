@@ -74,7 +74,9 @@ ACTION-SPECIFIC GUIDANCE:
 - GET_PAYMENT_HISTORY: use available invoice or client filters.
 - GET_OUTSTANDING_BALANCE: use available client filters.
 - GET_DASHBOARD_SUMMARY: no parameters are required.
-- CREATE_INVOICE_DRAFT: extract clientName or clientEmail and invoice items, lineItems or amount when supplied.
+- CREATE_INVOICE_DRAFT: use the canonical "items" parameter when invoice items are supplied.
+  Each item must contain "description", numeric "quantity", and numeric "unitPrice".
+  You may include numeric "taxRate". Do not create items from amount alone.
 - PREPARE_PAYMENT_FOLLOWUP: identify the invoice or client.
 - PREPARE_CLIENT_MESSAGE: identify the client and the message purpose or message content.
 - SEND_INVOICE: identify an existing invoice using invoiceId or invoiceNumber.
@@ -123,7 +125,16 @@ REQUIRED JSON FORMAT:
   },
   "workflow": {
     "action": "ALLOWED_ACTION",
-    "parameters": {},
+    "parameters": {
+      "clientName": "Semser Study",
+      "items": [
+        {
+          "description": "Website Development",
+          "quantity": 1,
+          "unitPrice": 15000
+        }
+      ]
+    },
     "requiresConfirmation": false
   },
   "clarificationQuestion": null,
@@ -136,7 +147,8 @@ For non-clarification responses, clarificationQuestion should be null.
  
 export const buildAssistantUserPrompt = ({
   message,
-  conversationHistory = []
+  conversationHistory = [],
+  context = {}
 }) => {
   const history = conversationHistory.map((item) => ({
     role: item.role,
@@ -145,6 +157,13 @@ export const buildAssistantUserPrompt = ({
 
   return JSON.stringify({
     conversationHistory: history,
-    currentMessage: message
+    currentMessage: message,
+    context: {
+      locale: context.locale ?? null,
+      accountCategory: context.accountCategory ?? null,
+      capabilities: Array.isArray(context.capabilities)
+        ? context.capabilities
+        : []
+    }
   });
 };

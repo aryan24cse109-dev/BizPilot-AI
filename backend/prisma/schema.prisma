@@ -55,6 +55,7 @@ enum InvoiceStatus {
 
 enum PaymentProvider {
   RAZORPAY
+  DUMMY
 }
 
 enum PaymentStatus {
@@ -73,7 +74,27 @@ enum WebhookProcessingStatus {
   FAILED
 }
 
+enum DummyPaymentSessionStatus {
+  ACTIVE
+  SUCCESSFUL
+  EXPIRED
+  REVOKED
+}
+
+enum DummyPaymentEventType {
+  SUCCESS_SIMULATED
+  FAILURE_SIMULATED
+}
+
 enum NotificationType {
+  // Existing legacy values — preserve compatibility
+  INVITATION
+  INVOICE_RECEIVED
+  PAYMENT_FAILED
+  PAYMENT_REMINDER
+  SYSTEM
+
+  // Current application values
   INVOICE_SENT
   INVOICE_VIEWED
   INVOICE_PAID
@@ -123,7 +144,15 @@ model User {
   businessPayments Payment[] @relation("PaymentBusiness")
   clientPayments   Payment[] @relation("PaymentClient")
 
+  createdDummySessions  DummyPaymentSession[] @relation("DummySessionBusiness")
+  receivedDummySessions DummyPaymentSession[] @relation("DummySessionClient")
+
   notifications Notification[]
+
+  // Messaging relations
+  conversationsStarted Conversation[] @relation("ConversationUser1")
+  conversationsJoined  Conversation[] @relation("ConversationUser2")
+  sentMessages         Message[]      @relation("MessageSender")
 
   actedAuditLogs AuditLog[] @relation("AuditActor")
   ownedAuditLogs AuditLog[] @relation("AuditOwner")
@@ -156,11 +185,11 @@ model BusinessProfile {
   postalCode   String? @db.VarChar(20)
 
   // Bank & Settlement Credentials for receiving client payments
-  bankAccountName   String? @db.VarChar(150)
-  bankAccountNumber String? @db.VarChar(50)
-  bankIfscCode      String? @db.VarChar(20)
-  bankName          String? @db.VarChar(100)
-  upiId             String? @db.VarChar(100)
+  bankAccountName     String? @db.VarChar(150)
+  bankAccountNumber   String? @db.VarChar(50)
+  bankIfscCode        String? @db.VarChar(20)
+  bankName            String? @db.VarChar(100)
+  upiId               String? @db.VarChar(100)
   paymentInstructions String? @db.Text
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
@@ -245,8 +274,8 @@ model Connection {
 model Invitation {
   id String @id @default(uuid()) @db.Uuid
 
-  businessUserId String @db.Uuid
-  email          String @db.VarChar(255)
+  businessUserId String  @db.Uuid
+  email          String  @db.VarChar(255)
   clientName     String? @db.VarChar(150)
   company        String? @db.VarChar(200)
 
@@ -321,8 +350,9 @@ model Invoice {
   businessUser User  @relation("InvoiceBusiness", fields: [businessUserId], references: [id], onDelete: Restrict)
   clientUser   User? @relation("InvoiceClient", fields: [clientUserId], references: [id], onDelete: Restrict)
 
-  items    InvoiceItem[]
-  payments Payment[]
+  items                InvoiceItem[]
+  payments             Payment[]
+  dummyPaymentSessions DummyPaymentSession[]
 
   @@unique([businessUserId, invoiceNumber])
   @@index([businessUserId, status, createdAt])
@@ -391,14 +421,61 @@ model Payment {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  invoice      Invoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
-  businessUser User    @relation("PaymentBusiness", fields: [businessUserId], references: [id], onDelete: Restrict)
-  clientUser   User?   @relation("PaymentClient", fields: [clientUserId], references: [id], onDelete: Restrict)
+  invoice      Invoice             @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  businessUser User                @relation("PaymentBusiness", fields: [businessUserId], references: [id], onDelete: Restrict)
+  clientUser   User?               @relation("PaymentClient", fields: [clientUserId], references: [id], onDelete: Restrict)
+  dummyEvents  DummyPaymentEvent[]
 
   @@index([invoiceId, status])
   @@index([businessUserId, status, createdAt])
   @@index([clientUserId, status])
   @@map("payments")
+}
+
+model DummyPaymentSession {
+  id             String  @id @default(uuid()) @db.Uuid
+  invoiceId      String  @db.Uuid
+  businessUserId String  @db.Uuid
+  clientUserId   String? @db.Uuid
+
+  tokenHash  String                    @unique @db.VarChar(64)
+  amount     Decimal                   @db.Decimal(18, 2)
+  currency   String                    @db.VarChar(3)
+  status     DummyPaymentSessionStatus @default(ACTIVE)
+  expiresAt  DateTime                  @db.Timestamptz(3)
+  consumedAt DateTime?                 @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  invoice      Invoice             @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  businessUser User                @relation("DummySessionBusiness", fields: [businessUserId], references: [id], onDelete: Restrict)
+  clientUser   User?               @relation("DummySessionClient", fields: [clientUserId], references: [id], onDelete: Restrict)
+  events       DummyPaymentEvent[]
+
+  @@index([invoiceId, status])
+  @@index([expiresAt, status])
+  @@index([businessUserId, status])
+  @@map("dummy_payment_sessions")
+}
+
+model DummyPaymentEvent {
+  id         String                @id @default(uuid()) @db.Uuid
+  sessionId  String                @db.Uuid
+  paymentId  String?               @db.Uuid
+  eventType  DummyPaymentEventType
+  requestKey String                @unique @db.VarChar(150)
+  amount     Decimal               @db.Decimal(18, 2)
+  currency   String                @db.VarChar(3)
+  metadata   Json?
+  createdAt  DateTime              @default(now()) @db.Timestamptz(3)
+
+  session DummyPaymentSession @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  payment Payment?            @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@index([sessionId, createdAt])
+  @@index([eventType, createdAt])
+  @@map("dummy_payment_events")
 }
 
 // -----------------------------------------------------
@@ -450,6 +527,56 @@ model Notification {
 
   @@index([userId, readAt, createdAt])
   @@map("notifications")
+}
+
+// -----------------------------------------------------
+// MESSAGING
+// -----------------------------------------------------
+
+model Conversation {
+  id String @id @default(uuid()) @db.Uuid
+
+  user1Id String @db.Uuid
+  user2Id String @db.Uuid
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  user1 User @relation("ConversationUser1", fields: [user1Id], references: [id], onDelete: Restrict)
+  user2 User @relation("ConversationUser2", fields: [user2Id], references: [id], onDelete: Restrict)
+
+  messages Message[]
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id, updatedAt])
+  @@index([user2Id, updatedAt])
+  @@map("Conversation")
+}
+
+model Message {
+  id String @id @default(uuid()) @db.Uuid
+
+  conversationId String @db.Uuid
+  senderId       String @db.Uuid
+
+  senderType String @default("USER") @db.VarChar(30)
+
+  content      String  @db.Text
+  activityType String? @db.VarChar(100)
+  activityData Json?
+
+  isRead Boolean @default(false)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Restrict)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId, createdAt])
+  @@index([conversationId, senderId, isRead])
+  @@map("Message")
 }
 
 // -----------------------------------------------------

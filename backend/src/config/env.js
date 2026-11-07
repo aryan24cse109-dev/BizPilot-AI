@@ -1,8 +1,14 @@
 
 import dotenv from "dotenv";
-dotenv.config({ override: true });
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
 
+const backendDirectory = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({
+  path: path.resolve(backendDirectory, "../../.env"),
+  override: false,
+});
 const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "production", "test"])
@@ -24,7 +30,7 @@ const envSchema = z.object({
 
   FRONTEND_URL: z.string().url().default("http://localhost:5173"),
 
-  AI_SERVICE_URL: z.string().url().default("http://localhost:6000"),
+  AI_SERVICE_URL: z.string().url().default("http://localhost:5001"),
 
   INTERNAL_SERVICE_SECRET: z
     .string()
@@ -48,6 +54,7 @@ const envSchema = z.object({
   RAZORPAY_KEY_ID: z.string().default(""),
   RAZORPAY_KEY_SECRET: z.string().default(""),
   RAZORPAY_WEBHOOK_SECRET: z.string().default(""),
+  DUMMY_SESSION_TTL_MINUTES: z.coerce.number().int().min(5).max(1440).default(30),
 });
 
 const result = envSchema.safeParse(process.env);

@@ -1,7 +1,13 @@
 import dotenv from 'dotenv';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
-dotenv.config({ override: true });
+const serviceDirectory = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({
+  path: path.resolve(serviceDirectory, '../../.env'),
+  override: false
+});
 
 const emptyToUndefined = (value) => {
   if (typeof value === 'string' && value.trim() === '') {

@@ -188,6 +188,7 @@ export async function listDashboardTransactions(user, filters, pageInput, limitI
       where,
       select: {
         id: true, invoiceId: true, amount: true, currency: true, status: true,
+        provider: true,
         providerOrderId: true, providerPaymentId: true, initiatedAt: true, capturedAt: true,
         invoice: { select: { invoiceNumber: true, clientName: true, clientEmail: true } },
       },

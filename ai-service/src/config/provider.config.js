@@ -5,14 +5,14 @@ export const PROVIDER_CONFIG = Object.freeze({
   sarvam: Object.freeze({
     name: 'sarvam',
     apiKey: env.SARVAM_API_KEY ?? null,
-    model: env.SARVAM_MODEL ?? 'sarvam-105b-conversations',
+    model: env.SARVAM_MODEL ?? 'sarvam-105b',
     enabled: Boolean(env.SARVAM_API_KEY)
   }),
 
   groq: Object.freeze({
     name: 'groq',
     apiKey: env.GROQ_API_KEY ?? null,
-    model: env.GROQ_MODEL ?? 'llama-3.3-70b-versatile',
+    model: env.GROQ_MODEL ?? 'openai/gpt-oss-120b',
     enabled: Boolean(env.GROQ_API_KEY)
   })
 });

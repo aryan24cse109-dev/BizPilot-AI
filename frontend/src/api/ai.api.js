@@ -5,6 +5,8 @@ export const aiApi = {
     api.post('/assistant/message', { message, conversationHistory }),
   executeWorkflow: (operation, input, confirmed = false) =>
     api.post('/assistant/workflows/execute', { operation, input, confirmed }),
+  transcribeVoice: ({ audio, language = 'unknown' }) =>
+    api.post('/assistant/voice/transcribe', { audio, language }),
   // Aliases for compatibility
   chat: (data) =>
     api.post('/assistant/message', {
@@ -15,6 +17,6 @@ export const aiApi = {
     api.post('/assistant/workflows/execute', {
       operation: data.operation || data.action,
       input: data.input || data.parameters || {},
-      confirmed: data.confirmed ?? true,
+      confirmed: data.confirmed ?? false,
     }),
 };

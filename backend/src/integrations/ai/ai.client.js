@@ -119,7 +119,62 @@ export const createAIClient = ({
     }
   };
 
-  return Object.freeze({ interpret });
+  const transcribe = async ({ audio, language = "unknown", signal }) => {
+    if (!secret) {
+      throw new AIServiceError(
+        503,
+        "AI service authentication is not configured.",
+        "AI_SERVICE_AUTH_NOT_CONFIGURED",
+      );
+    }
+    if (typeof audio !== "string" || !audio.startsWith("data:audio/")) {
+      throw new AIServiceError(400, "A supported audio data URL is required.", "AUDIO_INVALID");
+    }
+
+    const request = withTimeout(timeoutMs, signal);
+    let timeoutId;
+    try {
+      const responsePromise = fetchImpl(`${baseUrl.replace(/\/$/, "")}/api/voice/transcribe`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-ai-service-secret": secret,
+        },
+        body: JSON.stringify({ audio, language }),
+        signal: request.signal,
+      });
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new AIServiceError(504, "AI service request timed out.", "AI_SERVICE_TIMEOUT")),
+          timeoutMs,
+        );
+      });
+      const response = await Promise.race([responsePromise, timeoutPromise]);
+      const payload = await readResponseBody(response);
+      if (!response.ok) {
+        throw new AIServiceError(
+          response.status === 401 ? 502 : 502,
+          "AI transcription request failed.",
+          response.status === 401 ? "AI_SERVICE_AUTH_FAILED" : "AI_TRANSCRIPTION_FAILED",
+        );
+      }
+      if (!payload?.success || typeof payload.data?.transcript !== "string" || !payload.data.transcript.trim()) {
+        throw new AIServiceError(502, "AI service returned an invalid transcript.", "AI_TRANSCRIPTION_INVALID");
+      }
+      return payload.data;
+    } catch (error) {
+      if (error instanceof AIServiceError) throw error;
+      if (error.name === "AbortError") {
+        throw new AIServiceError(504, "AI service request timed out.", "AI_SERVICE_TIMEOUT");
+      }
+      throw new AIServiceError(503, "AI service is unavailable.", "AI_SERVICE_UNAVAILABLE");
+    } finally {
+      clearTimeout(timeoutId);
+      request.clear();
+    }
+  };
+
+  return Object.freeze({ interpret, transcribe });
 };
 
 export const aiClient = createAIClient();

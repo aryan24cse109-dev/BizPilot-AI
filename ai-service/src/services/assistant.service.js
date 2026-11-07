@@ -46,12 +46,15 @@ const createValidationError = (details) =>
     details
   });
 
-const createInvalidAIResponseError = (error) =>
+const createInvalidAIResponseError = (error, stage) =>
   new ApiError({
     statusCode: HTTP_STATUS.BAD_GATEWAY,
     message: 'AI provider returned an invalid assistant response.',
     code: ERROR_CODES.AI_RESPONSE_INVALID,
-    details: error?.details ?? null,
+    details: {
+      stage,
+      validationDetails: error?.details ?? null
+    },
     cause: error
   });
 
@@ -103,7 +106,8 @@ export const createAssistantService = ({
 
     const {
       message,
-      conversationHistory = []
+      conversationHistory = [],
+      context = {}
     } = validation.data;
 
     // 2. Analyze language, intent and conversation context.
@@ -126,68 +130,139 @@ export const createAssistantService = ({
         role: 'user',
         content: buildAssistantUserPrompt({
           message,
-          conversationHistory
+          conversationHistory,
+          context
         })
       }
     ];
 
-    // 4. Generate a response using Sarvam primary and Groq fallback.
-    const aiResult = await aiServiceImpl.generateChatCompletion({
-      messages,
-      temperature: 0.1,
-      maxTokens: 1500
-    });
+    // 4. Validate the complete output inside each provider attempt.
+    // This enables the AI service to use Groq if Sarvam produces
+    // invalid JSON, invalid schema output or an invalid workflow.
+    const validateProviderResponse = (aiResult) => {
+      let parsedResult;
 
-    // 5. Extract and parse JSON.
-    const parsedResult = parseAIJson(aiResult.content);
+      try {
+        parsedResult = parseAIJson(aiResult.content);
+      } catch (error) {
+        loggerImpl.warn('AI response JSON parsing failed', {
+          provider: aiResult.provider,
+          model: aiResult.model,
+          requestId: aiResult.requestId ?? null,
+          errorCode: error.code ?? null
+        });
 
-    // 6. Validate schema and cross-field consistency.
-    let validatedResponse;
-
-    try {
-      validatedResponse =
-        validateAndNormalizeAssistantOutput(parsedResult);
-    } catch (error) {
-      if (error instanceof AssistantOutputValidationError) {
-        throw createInvalidAIResponseError(error);
+        throw createInvalidAIResponseError(error, 'json_parse');
       }
 
-      throw error;
-    }
+      let validatedResponse;
 
-    // 7. Apply server-side confidence policy.
-    const confidenceCheckedResponse =
-      applyConfidencePolicy(validatedResponse);
+      try {
+        validatedResponse =
+          validateAndNormalizeAssistantOutput(parsedResult);
+      } catch (error) {
+        if (error instanceof AssistantOutputValidationError) {
+          loggerImpl.warn('AI response schema validation failed', {
+            provider: aiResult.provider,
+            issueCount: Array.isArray(error.details)
+              ? error.details.length
+              : null
+          });
 
-    // 8. Interpret the workflow and validate required parameters.
-    let workflowResult;
+          throw createInvalidAIResponseError(
+            error,
+            'schema_validation'
+          );
+        }
 
-    try {
-      workflowResult = interpretWorkflow(confidenceCheckedResponse);
-    } catch (error) {
-      if (error instanceof WorkflowInterpretationError) {
-        throw createInvalidAIResponseError(error);
+        throw error;
       }
 
-      throw error;
-    }
+      // 5. Apply server-side confidence policy.
+      let confidenceCheckedResponse;
 
-    const assistantResponse = workflowResult.response;
+      try {
+        confidenceCheckedResponse =
+          applyConfidencePolicy(validatedResponse);
+      } catch (error) {
+        loggerImpl.warn('AI response confidence policy failed', {
+          provider: aiResult.provider,
+          model: aiResult.model,
+          requestId: aiResult.requestId ?? null,
+          errorName: error.name
+        });
 
-    // 9. Log sanitized response metadata.
+        throw createInvalidAIResponseError(error, 'confidence_policy');
+      }
+
+      // 6. Interpret and validate workflow requirements.
+      let workflowResult;
+
+      try {
+        workflowResult = interpretWorkflow(
+          confidenceCheckedResponse
+        );
+      } catch (error) {
+        if (error instanceof WorkflowInterpretationError) {
+          loggerImpl.warn('AI workflow interpretation failed', {
+            provider: aiResult.provider,
+            errorName: error.name
+          });
+
+          throw createInvalidAIResponseError(
+            error,
+            'workflow_interpretation'
+          );
+        }
+
+        throw error;
+      }
+
+      return {
+        assistantResponse: workflowResult.response,
+        workflowResult
+      };
+    };
+
+    // 7. Generate, parse, validate and interpret.
+    // The AI service controls the single fallback attempt.
+    const aiResult = await aiServiceImpl.generateChatCompletion(
+      {
+        messages,
+        temperature: 0.1,
+        maxTokens: 1500,
+        responseFormat: {
+          type: 'json_object'
+        }
+      },
+      {
+        validateResponse: validateProviderResponse
+      }
+    );
+
+    const {
+      assistantResponse,
+      workflowResult
+    } = aiResult.validatedResponse;
+
+    // 8. Log sanitized response metadata.
     loggerImpl.info('Assistant request interpreted successfully', {
       provider: aiResult.provider,
+      model: aiResult.model,
       detectedLanguage: requestAnalysis.language,
       detectedIntent: requestAnalysis.intent,
       finalIntent: assistantResponse.intent,
       responseType: assistantResponse.type,
       confidence: assistantResponse.confidence,
       isFollowUp: requestAnalysis.isFollowUp,
-      workflowAction: workflowResult.interpretation.action ?? null,
-      workflowComplete: workflowResult.interpretation.isComplete
+      workflowAction:
+        workflowResult.interpretation.action ?? null,
+      workflowComplete:
+        workflowResult.interpretation.isComplete,
+      fallbackFrom: aiResult.fallbackFrom ?? null
     });
 
-    // 10. Return the normalized response and workflow interpretation.
+    // 9. Return the normalized response and workflow interpretation.
     return {
       ...assistantResponse,
 
@@ -203,7 +278,8 @@ export const createAssistantService = ({
           !workflowResult.interpretation.isComplete
       },
 
-      workflowInterpretation: workflowResult.interpretation,
+      workflowInterpretation:
+        workflowResult.interpretation,
 
       provider: aiResult.provider,
       model: aiResult.model,

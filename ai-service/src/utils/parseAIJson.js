@@ -2,47 +2,45 @@
 import { ApiError } from './ApiError.js';
 import { HTTP_STATUS, ERROR_CODES } from './constants.js';
 
+const createParseError = (reason) =>
+  new ApiError({
+    statusCode: HTTP_STATUS.BAD_GATEWAY,
+    message: 'AI provider returned an invalid JSON response.',
+    code: ERROR_CODES.AI_RESPONSE_PARSE_ERROR,
+    details: { reason }
+  });
+
 export const parseAIJson = (content) => {
   if (typeof content !== 'string' || !content.trim()) {
-    throw new ApiError({
-      statusCode: HTTP_STATUS.BAD_GATEWAY,
-      message: 'AI provider returned an empty response.',
-      code: ERROR_CODES.AI_RESPONSE_PARSE_ERROR
-    });
+    throw createParseError('empty_response');
   }
 
-  let cleaned = content.trim();
+  const cleaned = content.trim();
 
-  // Try direct parse first
+  // Accept a complete Markdown JSON code block.
+  const fencedMatch = cleaned.match(
+    /^```(?:json)?\s*([\s\S]*?)\s*```$/i
+  );
+
+  const candidate = fencedMatch
+    ? fencedMatch[1].trim()
+    : cleaned;
+
+  let parsed;
+
   try {
-    return JSON.parse(cleaned);
-  } catch { }
-
-  // Try extracting markdown JSON block ```json ... ```
-  const jsonMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-  if (jsonMatch && jsonMatch[1]) {
-    try {
-      return JSON.parse(jsonMatch[1].trim());
-    } catch { }
+    parsed = JSON.parse(candidate);
+  } catch {
+    throw createParseError('malformed_json');
   }
 
-  // Try extracting the first outer JSON object { ... }
-  const firstBrace = cleaned.indexOf('{');
-  const lastBrace = cleaned.lastIndexOf('}');
-  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-    try {
-      return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
-    } catch { }
+  if (
+    parsed === null ||
+    typeof parsed !== 'object' ||
+    Array.isArray(parsed)
+  ) {
+    throw createParseError('response_must_be_a_json_object');
   }
 
-  // Fallback: If AI returned plain conversational text, wrap it into a valid conversational response
-  return {
-    type: 'conversation',
-    intent: null,
-    confidence: 0.95,
-    entities: {},
-    workflow: null,
-    clarificationQuestion: null,
-    response: cleaned
-  };
+  return parsed;
 };

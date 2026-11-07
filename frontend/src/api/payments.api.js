@@ -14,6 +14,11 @@ export const paymentsApi = {
   getClientPayments: (params = {}) => api.get('/payments', { params: { role: 'client', ...params } }),
   getPayment: (id) => api.get(`/payments/${id}`),
   getInvoicePayments: (invoiceId) => api.get(`/payments/invoices/${invoiceId}`),
+  createDummySession: (invoiceId) => api.post(`/payments/invoices/${invoiceId}/dummy-session`),
+  getDummySession: (token) => api.get(`/demo-payments/${encodeURIComponent(token)}`),
+  simulateDummyPayment: (token, data) =>
+    api.post(`/demo-payments/${encodeURIComponent(token)}/simulate`, data),
+  revokeDummySession: (sessionId) => api.delete(`/payments/dummy-sessions/${sessionId}`),
 };
 
 export default paymentsApi;

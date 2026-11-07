@@ -131,10 +131,26 @@ export const ClientInvoiceDetailsPage = () => {
           }
         },
         prefill: {
-          name: user?.fullName || invoice.clientUser?.fullName || 'Client User',
-          email: user?.email || invoice.clientEmail || '',
-        },
-        theme: { color: '#17A673' },
+  name: user?.fullName || invoice.clientUser?.fullName || 'Client User',
+  email: user?.email || invoice.clientEmail || '',
+},
+hidden: {
+  contact: true,
+},
+theme: { color: '#17A673' },
+      };
+
+      const handleCreateDummySession = async () => {
+        setPaymentProcessing(true);
+        try {
+          const response = await paymentsApi.createDummySession(invoice.id);
+          const created = response?.data || response;
+          window.location.assign(created.paymentUrl);
+        } catch (err) {
+          toast.error('Demo Payment Error', err.message || 'Could not open the demo payment page.');
+        } finally {
+          setPaymentProcessing(false);
+        }
       };
 
       const rzp = new window.Razorpay(options);
@@ -148,7 +164,48 @@ export const ClientInvoiceDetailsPage = () => {
       setPaymentProcessing(false);
     }
   };
+const handleCreateDummySession = async () => {
+  if (!invoice?.id) {
+    toast.error('Invoice information is unavailable.');
+    return;
+  }
 
+  setPaymentProcessing(true);
+
+  try {
+    const response = await paymentsApi.createDummySession(invoice.id);
+
+    // Support both Axios responses and unwrapped API responses.
+    const session =
+      response?.data?.data ??
+      response?.data ??
+      response?.data?.result ??
+      response?.data ??
+      response;
+
+    if (!session?.paymentUrl) {
+      throw new Error('Demo payment link was not returned by the server.');
+    }
+
+    const paymentUrl = new URL(session.paymentUrl, window.location.origin);
+
+    // Only allow navigation to the configured frontend origin.
+    if (paymentUrl.origin !== window.location.origin) {
+      throw new Error('Invalid demo payment URL.');
+    }
+
+    navigate(`${paymentUrl.pathname}${paymentUrl.search}${paymentUrl.hash}`);
+  } catch (err) {
+    console.error('Failed to create demo payment session:', err);
+    toast.error(
+      err?.response?.data?.message ||
+      err.message ||
+      'Unable to create demo payment session.'
+    );
+  } finally {
+    setPaymentProcessing(false);
+  }
+};
   if (loading) return <LoadingSpinner size="lg" text="Loading invoice breakdown..." />;
 
   if (error || !invoice) {
@@ -566,6 +623,16 @@ export const ClientInvoiceDetailsPage = () => {
                 icon={ShieldCheck}
               >
                 Launch Razorpay Checkout (₹{Number(paymentAmount).toLocaleString('en-IN')})
+              </Button>
+              <Button
+                variant="secondary"
+                size="lg"
+                className="w-full text-xs font-bold"
+                onClick={handleCreateDummySession}
+                loading={paymentProcessing}
+                icon={QrCode}
+              >
+                Open Demo Payment (No Money)
               </Button>
 
               <div className="flex items-center justify-center gap-2 text-[10px] text-slate-400 pt-1">

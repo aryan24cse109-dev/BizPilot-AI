@@ -30,8 +30,15 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    const message = error.response?.data?.message || error.message || 'An unexpected error occurred.';
-    return Promise.reject(new Error(message));
+    const responseData = error.response?.data;
+    const clientError = new Error(
+      responseData?.message || error.message || 'An unexpected error occurred.',
+    );
+    clientError.code = responseData?.code ?? responseData?.error?.code ?? null;
+    clientError.requestId = responseData?.requestId ?? null;
+    clientError.status = error.response?.status ?? null;
+    clientError.details = responseData?.details ?? responseData?.error?.details ?? null;
+    return Promise.reject(clientError);
   }
 );
 

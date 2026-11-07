@@ -56,6 +56,7 @@ export const InvoiceDetailsPage = () => {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentSuccessData, setPaymentSuccessData] = useState(null);
+  const [dummySession, setDummySession] = useState(null);
 
   const fetchInvoice = async () => {
     setLoading(true);
@@ -163,17 +164,37 @@ export const InvoiceDetailsPage = () => {
                 razorpaySignature: response.razorpay_signature,
               });
               setPaymentSuccessData(verifyRes?.data || verifyRes);
-              toast.success('Payment Verified Successfully!');
+              if (verifyRes?.data?.authoritativeCapturePending) {
+                toast.info('Payment Pending', 'Razorpay capture confirmation is still pending.');
+              } else {
+                toast.success('Payment Verified Successfully!');
+              }
               fetchInvoice();
             } catch (vErr) {
               toast.error('Payment Verification Failed', vErr.message);
             }
           },
           prefill: {
-            name: user?.name || 'Client',
-            email: user?.email || '',
-          },
-          theme: { color: '#17A673' },
+  name: user?.name || 'Client',
+  email: user?.email || '',
+},
+hidden: {
+  contact: true,
+},
+theme: { color: '#17A673' },
+        };
+
+        const handleCreateDummySession = async () => {
+          setPaymentProcessing(true);
+          try {
+            const response = await paymentsApi.createDummySession(invoice.id);
+            setDummySession(response?.data || response);
+            toast.success('Demo Payment Session Created', 'Share the QR or demo payment link with the client.');
+          } catch (err) {
+            toast.error('Demo Session Failed', err.message || 'Could not create a demo payment session.');
+          } finally {
+            setPaymentProcessing(false);
+          }
         };
         const rzp = new window.Razorpay(options);
         rzp.open();
@@ -531,7 +552,9 @@ export const InvoiceDetailsPage = () => {
                   <tr key={p.id} className="hover:bg-charcoal-800/20">
                     <td className="py-2.5 px-3 font-mono text-slate-300">{p.providerPaymentId || p.providerOrderId || p.id}</td>
                     <td className="py-2.5 px-3 text-slate-400">{new Date(p.createdAt || p.paymentDate).toLocaleString('en-IN')}</td>
-                    <td className="py-2.5 px-3 text-slate-300 uppercase">{p.paymentMethod || 'Razorpay'}</td>
+                    <td className="py-2.5 px-3 text-slate-300 uppercase">
+                      {p.provider === 'DUMMY' ? 'Demo Payment' : 'Razorpay'}
+                    </td>
                     <td className="py-2.5 px-3 font-mono font-bold text-emerald-400">₹{Number(p.amount).toLocaleString('en-IN')}</td>
                     <td className="py-2.5 px-3"><Badge status={p.status} /></td>
                   </tr>
@@ -608,6 +631,27 @@ export const InvoiceDetailsPage = () => {
             Click below to launch the secure checkout dialog and settle Invoice {invoice.invoiceNumber}.
           </p>
 
+          {dummySession && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-4 text-center space-y-3">
+              <p className="text-xs font-bold text-amber-300">Demo Payment / Simulated Transaction</p>
+              <img
+                src={dummySession.qrDataUrl}
+                alt="Demo payment QR code"
+                className="mx-auto w-48 h-48 rounded-lg bg-white p-2"
+              />
+              <p className="text-[11px] text-slate-400">
+                Expires {new Date(dummySession.expiresAt).toLocaleString('en-IN')}
+              </p>
+              <button
+                type="button"
+                className="text-xs text-emerald-400 underline"
+                onClick={() => navigator.clipboard.writeText(dummySession.paymentUrl)}
+              >
+                Copy demo payment link
+              </button>
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
             <Button variant="secondary" size="sm" onClick={() => setShowPaymentModal(false)}>
               Cancel
@@ -620,6 +664,15 @@ export const InvoiceDetailsPage = () => {
               icon={CreditCard}
             >
               Launch Razorpay Checkout
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={paymentProcessing}
+              onClick={handleCreateDummySession}
+              icon={QrCode}
+            >
+              Generate Demo QR
             </Button>
           </div>
         </div>

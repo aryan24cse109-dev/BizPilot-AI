@@ -20,7 +20,7 @@ const validInput = {
 const successResponse = () =>
   new Response(JSON.stringify({
     id: 'groq-test-123',
-    model: 'llama-3.3-70b-versatile',
+    model: 'openai/gpt-oss-120b',
     choices: [
       {
         message: {
@@ -57,7 +57,7 @@ test('Groq sends a valid chat completion request', async () => {
 
   assert.equal(result.provider, 'groq');
   assert.equal(result.content, 'Hello!');
-  assert.equal(result.model, 'llama-3.3-70b-versatile');
+  assert.equal(result.model, 'openai/gpt-oss-120b');
   assert.equal(result.usage.totalTokens, 15);
 
   assert.equal(
@@ -72,8 +72,28 @@ test('Groq sends a valid chat completion request', async () => {
 
   const body = JSON.parse(capturedRequest.options.body);
 
-  assert.equal(body.model, 'llama-3.3-70b-versatile');
+  assert.equal(body.model, 'openai/gpt-oss-120b');
   assert.equal(body.max_completion_tokens, 100);
+});
+
+test('Groq forwards JSON response format for structured responses', async () => {
+  let capturedBody;
+  const provider = createGroqProvider({
+    apiKey: 'test-groq-key',
+    fetchImpl: async (_url, options) => {
+      capturedBody = JSON.parse(options.body);
+      return successResponse();
+    }
+  });
+
+  await provider.generateChatCompletion({
+    ...validInput,
+    responseFormat: { type: 'json_object' }
+  });
+
+  assert.deepEqual(capturedBody.response_format, {
+    type: 'json_object'
+  });
 });
 
 test('Groq rejects invalid input', async () => {
@@ -124,6 +144,44 @@ test('Groq handles upstream authentication errors', async () => {
       assert.equal(error.statusCode, 502);
       assert.equal(error.code, 'AI_PROVIDER_ERROR');
       assert.equal(error.details.providerStatus, 401);
+      return true;
+    }
+  );
+});
+
+test('Groq classifies permission errors', async () => {
+  const provider = createGroqProvider({
+    apiKey: 'test-groq-key',
+    fetchImpl: async () => new Response(
+      JSON.stringify({ error: { message: 'Forbidden' } }),
+      { status: 403 }
+    )
+  });
+
+  await assert.rejects(
+    provider.generateChatCompletion(validInput),
+    (error) => {
+      assert.equal(error.details.providerStatus, 403);
+      assert.equal(error.details.providerCategory, 'permission');
+      return true;
+    }
+  );
+});
+
+test('Groq classifies route or model errors', async () => {
+  const provider = createGroqProvider({
+    apiKey: 'test-groq-key',
+    fetchImpl: async () => new Response(
+      JSON.stringify({ error: { message: 'Not found' } }),
+      { status: 404 }
+    )
+  });
+
+  await assert.rejects(
+    provider.generateChatCompletion(validInput),
+    (error) => {
+      assert.equal(error.details.providerStatus, 404);
+      assert.equal(error.details.providerCategory, 'route_or_model');
       return true;
     }
   );
@@ -213,6 +271,34 @@ test('Groq rejects empty model responses', async () => {
     (error) => {
       assert.equal(error.statusCode, 502);
       assert.equal(error.code, 'AI_RESPONSE_INVALID');
+      return true;
+    }
+  );
+});
+
+test('Groq rejects truncated model responses', async () => {
+  const provider = createGroqProvider({
+    apiKey: 'test-groq-key',
+    fetchImpl: async () => new Response(
+      JSON.stringify({
+        id: 'groq-truncated',
+        choices: [
+          {
+            finish_reason: 'length',
+            message: { content: '{"type":"conversation"' }
+          }
+        ]
+      }),
+      { status: 200 }
+    )
+  });
+
+  await assert.rejects(
+    provider.generateChatCompletion(validInput),
+    (error) => {
+      assert.equal(error.code, 'AI_RESPONSE_INVALID');
+      assert.equal(error.details.stage, 'truncation');
+      assert.equal(error.details.requestId, 'groq-truncated');
       return true;
     }
   );

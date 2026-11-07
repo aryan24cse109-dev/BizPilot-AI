@@ -27,14 +27,26 @@ const validWorkflowResponse = {
 };
 
 const createMockAIService = (content) => ({
-  generateChatCompletion: async () => ({
-    provider: 'sarvam',
-    model: 'sarvam-105b',
-    content,
-    finishReason: 'stop',
-    usage: null,
-    requestId: 'test-request'
-  })
+  generateChatCompletion: async (
+    _input,
+    { validateResponse } = {}
+  ) => {
+    const result = {
+      provider: 'sarvam',
+      model: 'sarvam-105b',
+      content,
+      finishReason: 'stop',
+      usage: null,
+      requestId: 'test-request'
+    };
+
+    return {
+      ...result,
+      validatedResponse: validateResponse
+        ? validateResponse(result)
+        : undefined
+    };
+  }
 });
 
 const silentLogger = {
@@ -59,6 +71,55 @@ test('interprets a valid workflow request', async () => {
   assert.equal(result.intent, 'GET_INVOICE');
   assert.equal(result.provider, 'sarvam');
   assert.equal(result.workflow.action, 'GET_INVOICE');
+});
+
+test('passes safe assistant context into the provider prompt', async () => {
+  let capturedInput;
+  const service = createAssistantService({
+    aiServiceImpl: {
+      generateChatCompletion: async (input, { validateResponse }) => {
+        capturedInput = input;
+        const providerResult = {
+          provider: 'sarvam',
+          model: 'sarvam-105b',
+          content: JSON.stringify({
+            type: 'conversation',
+            intent: null,
+            confidence: 0.95,
+            entities: {},
+            workflow: null,
+            clarificationQuestion: null,
+            response: 'Hello'
+          })
+        };
+        return {
+          ...providerResult,
+          validatedResponse: validateResponse(providerResult)
+        };
+      }
+    },
+    loggerImpl: silentLogger
+  });
+
+  await service.interpretMessage({
+    message: 'Hello',
+    context: {
+      locale: 'en-IN',
+      accountCategory: 'BUSINESS',
+      capabilities: ['read_invoices'],
+      privateValue: 'must not be forwarded'
+    }
+  });
+
+  const prompt = JSON.parse(capturedInput.messages[2].content);
+  assert.deepEqual(capturedInput.responseFormat, {
+    type: 'json_object'
+  });
+  assert.deepEqual(prompt.context, {
+    locale: 'en-IN',
+    accountCategory: 'BUSINESS',
+    capabilities: ['read_invoices']
+  });
 });
 
 test('forces confirmation for SEND_INVOICE', async () => {
@@ -150,7 +211,11 @@ test('rejects a malformed AI JSON response', async () => {
     () => service.interpretMessage({
       message: 'Show my invoices'
     }),
-    (error) => error.code === 'AI_RESPONSE_PARSE_ERROR'
+    (error) => {
+      assert.equal(error.code, 'AI_RESPONSE_INVALID');
+      assert.equal(error.details.stage, 'json_parse');
+      return true;
+    }
   );
 });
 

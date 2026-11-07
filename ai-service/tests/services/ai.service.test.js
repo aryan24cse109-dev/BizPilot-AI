@@ -136,6 +136,50 @@ test('AI service falls back after a provider rate limit', async () => {
   assert.equal(result.fallbackFrom, 'sarvam');
 });
 
+test('AI service falls back when primary response validation fails', async () => {
+  let validationCalls = 0;
+  const sarvam = createProvider('sarvam', async () => ({
+    provider: 'sarvam',
+    content: 'invalid'
+  }));
+  const groq = createProvider('groq', async () => ({
+    provider: 'groq',
+    content: '{"valid":true}'
+  }));
+  const service = createAIService({
+    primaryProvider: sarvam,
+    fallbackProvider: groq,
+    isFallbackConfigured: () => true,
+    loggerImpl: createLogger()
+  });
+
+  const result = await service.generateChatCompletion(input, {
+    validateResponse: (providerResult) => {
+      validationCalls += 1;
+
+      if (providerResult.provider === 'sarvam') {
+        throw new ApiError({
+          statusCode: 502,
+          message: 'Invalid structured response',
+          code: 'AI_RESPONSE_INVALID',
+          details: {
+            provider: 'sarvam',
+            stage: 'json_parse',
+            requestId: 'sarvam-invalid'
+          }
+        });
+      }
+
+      return { accepted: true };
+    }
+  });
+
+  assert.equal(result.provider, 'groq');
+  assert.equal(result.fallbackFrom, 'sarvam');
+  assert.equal(result.validatedResponse.accepted, true);
+  assert.equal(validationCalls, 2);
+});
+
 test('AI service does not fallback for invalid requests', async () => {
   let groqCalled = false;
 
@@ -254,7 +298,9 @@ test('AI service returns controlled error when both providers fail', async () =>
     (error) => {
       assert.equal(error.statusCode, 503);
       assert.equal(error.code, 'AI_PROVIDER_UNAVAILABLE');
-      assert.equal(error.details.fallbackFailed, true);
+      assert.equal(error.details.fallbackProviderFailed, true);
+      assert.equal(error.details.primaryFailure.code, 'AI_PROVIDER_TIMEOUT');
+      assert.equal(error.details.fallbackFailure.code, 'AI_PROVIDER_UNAVAILABLE');
       return true;
     }
   );

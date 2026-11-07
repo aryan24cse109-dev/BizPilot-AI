@@ -15,6 +15,7 @@ import invitationRoutes from "./modules/invitations/invitation.routes.js";
 
 import invoiceRoutes from "./modules/invoices/invoice.routes.js";
 import paymentRoutes, {
+  dummyPaymentRouter,
   paymentWebhookRouter,
 } from "./modules/payments/payment.routes.js";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes.js";
@@ -99,6 +100,7 @@ app.use(`${env.API_PREFIX}/connections`, connectionRoutes);
 app.use(`${env.API_PREFIX}/invitations`, invitationRoutes);
 app.use(`${env.API_PREFIX}/invoices`, invoiceRoutes);
 app.use(`${env.API_PREFIX}/payments`, paymentRoutes);
+app.use(`${env.API_PREFIX}/demo-payments`, dummyPaymentRouter);
 app.use(`${env.API_PREFIX}/dashboard`, dashboardRoutes);
 app.use(`${env.API_PREFIX}/assistant`, assistantRoutes);
 app.use(`${env.API_PREFIX}/messages`, messageRoutes);

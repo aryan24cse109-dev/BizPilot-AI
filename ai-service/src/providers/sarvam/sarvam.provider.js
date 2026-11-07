@@ -1,5 +1,6 @@
 
 import { z } from 'zod';
+import { randomUUID } from 'node:crypto';
 
 import { env } from '../../config/env.js';
 import { getProviderConfig } from '../../config/provider.config.js';
@@ -29,7 +30,12 @@ const completionSchema = z.object({
 
   temperature: z.number().min(0).max(2).optional(),
 
-  maxTokens: z.number().int().min(1).max(8192).optional()
+  maxTokens: z.number().int().min(1).max(8192).optional(),
+
+  responseFormat: z.object({
+    type: z.enum(['text', 'json_object', 'json_schema']),
+    json_schema: z.record(z.string(), z.unknown()).optional()
+  }).strict().optional()
 }).strict();
 
 // Normalize and validate the Sarvam response.
@@ -37,6 +43,22 @@ const normalizeResponse = (response, requestedModel) => {
   const choice = response?.choices?.[0];
 
   const content = choice?.message?.content;
+  const finishReason = choice?.finish_reason ?? null;
+  const requestId = response?.id ?? null;
+
+  if (finishReason === 'length') {
+    throw new ApiError({
+      statusCode: HTTP_STATUS.BAD_GATEWAY,
+      message: 'Sarvam returned a truncated assistant response.',
+      code: ERROR_CODES.AI_RESPONSE_INVALID,
+      details: {
+        provider: 'sarvam',
+        stage: 'truncation',
+        finishReason,
+        requestId
+      }
+    });
+  }
 
   if (typeof content !== 'string' || !content.trim()) {
     throw new ApiError({
@@ -44,7 +66,10 @@ const normalizeResponse = (response, requestedModel) => {
       message: 'Sarvam AI returned an invalid or empty response.',
       code: ERROR_CODES.AI_RESPONSE_INVALID,
       details: {
-        provider: 'sarvam'
+        provider: 'sarvam',
+        stage: 'empty_response',
+        finishReason,
+        requestId
       }
     });
   }
@@ -56,7 +81,7 @@ const normalizeResponse = (response, requestedModel) => {
 
     content: content.trim(),
 
-    finishReason: choice.finish_reason ?? null,
+    finishReason,
 
     usage: response.usage
       ? {
@@ -66,7 +91,7 @@ const normalizeResponse = (response, requestedModel) => {
         }
       : null,
 
-    requestId: response.id ?? null
+    requestId
   };
 };
 
@@ -88,6 +113,15 @@ const parseProviderError = async (response) => {
       providerMessage: 'Sarvam API request failed.'
     };
   }
+};
+
+const providerCategoryForStatus = (status) => {
+  if (status === 401) return 'authentication';
+  if (status === 403) return 'permission';
+  if (status === 404) return 'route_or_model';
+  if (status === 429) return 'rate_limit';
+  if (status >= 500) return 'upstream';
+  return 'request';
 };
 
 // Create a Sarvam provider instance.
@@ -131,10 +165,12 @@ export const createSarvamProvider = ({
       messages,
       model: requestedModel,
       temperature,
-      maxTokens
+      maxTokens,
+      responseFormat
     } = parsedInput.data;
 
     const selectedModel = requestedModel ?? model;
+    const requestId = randomUUID();
 
     const url = new URL(
       SARVAM_CONFIG.chatCompletionsPath,
@@ -165,7 +201,11 @@ export const createSarvamProvider = ({
             temperature ?? SARVAM_CONFIG.defaultTemperature,
 
           max_tokens:
-            maxTokens ?? SARVAM_CONFIG.defaultMaxTokens
+            maxTokens ?? SARVAM_CONFIG.defaultMaxTokens,
+
+          ...(responseFormat
+            ? { response_format: responseFormat }
+            : {})
         }),
 
         signal: controller.signal
@@ -177,7 +217,11 @@ export const createSarvamProvider = ({
 
         logger.warn('Sarvam API returned an error', {
           provider: 'sarvam',
-          providerStatus: response.status
+          providerStatus: response.status,
+          providerCategory: providerCategoryForStatus(response.status),
+          providerMessage: String(providerError.providerMessage).slice(0, 200),
+          model: selectedModel,
+          requestId
         });
 
         const statusCode =
@@ -191,7 +235,9 @@ export const createSarvamProvider = ({
           code: ERROR_CODES.AI_PROVIDER_ERROR,
           details: {
             provider: 'sarvam',
-            providerStatus: providerError.providerStatus
+            providerStatus: providerError.providerStatus,
+            providerCategory: providerCategoryForStatus(providerError.providerStatus),
+            requestId
           }
         });
       }
@@ -212,7 +258,8 @@ export const createSarvamProvider = ({
         throw new ApiError({
           statusCode: HTTP_STATUS.GATEWAY_TIMEOUT,
           message: 'Sarvam AI request timed out.',
-          code: ERROR_CODES.AI_PROVIDER_TIMEOUT
+          code: ERROR_CODES.AI_PROVIDER_TIMEOUT,
+          details: { provider: 'sarvam', reason: 'timeout', requestId }
         });
       }
 
@@ -226,7 +273,8 @@ export const createSarvamProvider = ({
       throw new ApiError({
         statusCode: HTTP_STATUS.SERVICE_UNAVAILABLE,
         message: 'Unable to communicate with Sarvam AI.',
-        code: ERROR_CODES.AI_PROVIDER_UNAVAILABLE
+        code: ERROR_CODES.AI_PROVIDER_UNAVAILABLE,
+        details: { provider: 'sarvam', reason: 'network_error', requestId }
       });
 
     } finally {

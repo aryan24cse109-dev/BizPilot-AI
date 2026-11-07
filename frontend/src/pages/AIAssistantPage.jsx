@@ -21,8 +21,350 @@ import {
   Trash2,
   RefreshCw,
   Copy,
-  Volume2
+  Volume2,
+  TrendingUp,
+  CreditCard,
+  User,
+  ArrowRight,
 } from 'lucide-react';
+
+/**
+ * Custom renderer for structured workflow execution results.
+ */
+const WorkflowResultCard = ({ operation, result }) => {
+  if (!result) return null;
+
+  // 1. Dashboard summary
+  if (operation === 'GET_DASHBOARD_SUMMARY') {
+    const fin = result.metrics?.financial || {};
+    const inv = result.metrics?.invoices || {};
+    const pay = result.metrics?.payments || {};
+    return (
+      <div className="mt-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-3">
+        <div className="flex items-center gap-2 font-bold text-slate-800 text-sm border-b border-slate-200 pb-2">
+          <TrendingUp className="w-4 h-4 text-emerald-600" />
+          <span>Business Dashboard Summary</span>
+          <span className="ml-auto text-[10px] font-semibold text-slate-500 uppercase">{result.period || 'All time'}</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="p-2 bg-white rounded-lg border border-slate-200/80">
+            <span className="text-[10px] text-slate-500 block">Total Invoiced</span>
+            <span className="font-bold text-slate-900 text-sm">₹{Number(fin.totalInvoicedAmount || 0).toLocaleString('en-IN')}</span>
+          </div>
+          <div className="p-2 bg-white rounded-lg border border-slate-200/80">
+            <span className="text-[10px] text-slate-500 block">Total Collected</span>
+            <span className="font-bold text-emerald-600 text-sm">₹{Number(fin.totalCapturedAmount || 0).toLocaleString('en-IN')}</span>
+          </div>
+          <div className="p-2 bg-white rounded-lg border border-slate-200/80">
+            <span className="text-[10px] text-slate-500 block">Outstanding</span>
+            <span className="font-bold text-amber-600 text-sm">₹{Number(fin.totalOutstandingAmount || 0).toLocaleString('en-IN')}</span>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 text-[11px] text-slate-600 pt-1">
+          <span className="bg-white px-2 py-0.5 rounded border border-slate-200">Total Invoices: <strong>{inv.total ?? 0}</strong></span>
+          <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">Paid: <strong>{inv.paid ?? 0}</strong></span>
+          <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">Pending: <strong>{inv.sent ?? 0}</strong></span>
+          <span className="bg-rose-50 text-rose-700 px-2 py-0.5 rounded border border-rose-200">Overdue: <strong>{inv.overdue ?? 0}</strong></span>
+          <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">Payments: <strong>{pay.successfulCount ?? 0}</strong></span>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Aggregated Payment Summary
+  if (operation === 'GET_PAYMENT_SUMMARY') {
+    const { period, totalCollected, currency, paymentCount, providerBreakdown, outstanding, recentPayments } = result;
+    return (
+      <div className="mt-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-3">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+          <div className="flex items-center gap-2 font-bold text-slate-800 text-sm">
+            <CreditCard className="w-4 h-4 text-emerald-600" />
+            <span>Payment Summary</span>
+          </div>
+          <span className="text-[10px] font-semibold text-slate-500 uppercase">{period}</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div className="p-2.5 bg-white rounded-lg border border-slate-200">
+            <span className="text-[10px] text-slate-500 block">Verified Collections</span>
+            <span className="font-bold text-emerald-600 text-base">
+              ₹{Number(totalCollected || 0).toLocaleString('en-IN')}
+            </span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">{paymentCount || 0} successful transaction(s)</span>
+          </div>
+          {outstanding && (
+            <div className="p-2.5 bg-white rounded-lg border border-slate-200">
+              <span className="text-[10px] text-slate-500 block">Current Outstanding</span>
+              <span className="font-bold text-amber-600 text-base">
+                ₹{Number(outstanding.total || 0).toLocaleString('en-IN')}
+              </span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">{outstanding.invoiceCount || 0} pending invoice(s)</span>
+            </div>
+          )}
+        </div>
+
+        {providerBreakdown && providerBreakdown.length > 0 && (
+          <div className="space-y-1">
+            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide block">Provider Breakdown:</span>
+            <div className="flex flex-wrap gap-2">
+              {providerBreakdown.map((pb, idx) => (
+                <span key={idx} className="bg-white px-2 py-1 rounded border border-slate-200 text-[11px] text-slate-700">
+                  <strong className="text-slate-900">{pb.provider}:</strong> ₹{Number(pb.totalCollected).toLocaleString('en-IN')}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {recentPayments && recentPayments.length > 0 && (
+          <div className="space-y-1.5 pt-1">
+            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide block">Recent Transactions:</span>
+            <div className="space-y-1 max-h-36 overflow-y-auto">
+              {recentPayments.map((p, idx) => (
+                <div key={idx} className="p-1.5 bg-white rounded border border-slate-200 flex items-center justify-between text-[11px]">
+                  <div>
+                    <span className="font-semibold text-slate-800">{p.clientName || p.invoiceNumber || 'Payment'}</span>
+                    {p.invoiceNumber && <span className="text-slate-400 ml-1.5 font-mono text-[10px]">({p.invoiceNumber})</span>}
+                  </div>
+                  <div className="text-right">
+                    <span className="font-bold text-emerald-600">₹{Number(p.amount).toLocaleString('en-IN')}</span>
+                    <span className="text-[10px] text-slate-400 ml-2">{new Date(p.date).toLocaleDateString('en-IN')}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // 3. Client Payment Summary
+  if (operation === 'GET_CLIENT_PAYMENT_SUMMARY') {
+    const { client, summary, invoices, recentPayments } = result;
+    return (
+      <div className="mt-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-3">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+          <div className="flex items-center gap-2 font-bold text-slate-800 text-sm">
+            <User className="w-4 h-4 text-emerald-600" />
+            <span>Client: {client?.name || 'Client Details'}</span>
+          </div>
+          {client?.email && <span className="text-[10px] text-slate-500">{client.email}</span>}
+        </div>
+
+        {summary && (
+          <div className="grid grid-cols-3 gap-2">
+            <div className="p-2 bg-white rounded-lg border border-slate-200">
+              <span className="text-[10px] text-slate-500 block">Total Billed</span>
+              <span className="font-bold text-slate-900 text-xs">₹{Number(summary.totalBilled || 0).toLocaleString('en-IN')}</span>
+            </div>
+            <div className="p-2 bg-white rounded-lg border border-slate-200">
+              <span className="text-[10px] text-slate-500 block">Total Paid</span>
+              <span className="font-bold text-emerald-600 text-xs">₹{Number(summary.totalPaid || 0).toLocaleString('en-IN')}</span>
+            </div>
+            <div className="p-2 bg-white rounded-lg border border-slate-200">
+              <span className="text-[10px] text-slate-500 block">Outstanding</span>
+              <span className="font-bold text-amber-600 text-xs">₹{Number(summary.totalOutstanding || 0).toLocaleString('en-IN')}</span>
+            </div>
+          </div>
+        )}
+
+        {invoices && invoices.length > 0 && (
+          <div className="space-y-1">
+            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide block">Invoices ({invoices.length}):</span>
+            <div className="space-y-1 max-h-32 overflow-y-auto">
+              {invoices.map((inv, idx) => (
+                <div key={idx} className="p-1.5 bg-white rounded border border-slate-200 flex items-center justify-between text-[11px]">
+                  <div>
+                    <span className="font-mono font-semibold text-slate-800">{inv.invoiceNumber}</span>
+                    <span className={`ml-2 text-[9px] px-1.5 py-0.2 rounded font-semibold ${
+                      inv.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' :
+                      inv.status === 'PARTIALLY_PAID' ? 'bg-blue-100 text-blue-800' :
+                      'bg-amber-100 text-amber-800'
+                    }`}>{inv.status}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-700">₹{Number(inv.totalAmount).toLocaleString('en-IN')}</span>
+                    {Number(inv.balanceDue) > 0 && (
+                      <span className="text-amber-600 text-[10px] ml-1.5 font-semibold">(Due: ₹{Number(inv.balanceDue).toLocaleString('en-IN')})</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // 4. Invoice Lists (LIST_INVOICES, LIST_PENDING_INVOICES, LIST_OVERDUE_INVOICES, etc.)
+  const invoiceList = result.invoices || (Array.isArray(result) ? result : null);
+  if (invoiceList && Array.isArray(invoiceList)) {
+    if (invoiceList.length === 0) {
+      return (
+        <div className="mt-2 p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-slate-400" />
+          <span>No matching invoices found in this view.</span>
+        </div>
+      );
+    }
+    return (
+      <div className="mt-3 space-y-2">
+        <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+          <span>Found {invoiceList.length} invoice(s):</span>
+          {result.pagination?.total && <span>Total: {result.pagination.total}</span>}
+        </div>
+        <div className="space-y-1.5 max-h-56 overflow-y-auto">
+          {invoiceList.map((inv, idx) => (
+            <div key={idx} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 flex items-center justify-between text-xs hover:bg-slate-100/70 transition">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-slate-900">{inv.invoiceNumber}</span>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                    inv.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' :
+                    inv.status === 'OVERDUE' ? 'bg-rose-100 text-rose-800' :
+                    inv.status === 'PARTIALLY_PAID' ? 'bg-blue-100 text-blue-800' :
+                    inv.status === 'DRAFT' ? 'bg-slate-200 text-slate-700' :
+                    'bg-amber-100 text-amber-800'
+                  }`}>
+                    {inv.status}
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
+                  <span>Client: <strong className="text-slate-700">{inv.clientName || inv.clientEmail || 'Client'}</strong></span>
+                  {inv.dueDate && <span>• Due: {new Date(inv.dueDate).toLocaleDateString('en-IN')}</span>}
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="font-bold text-slate-900 block">₹{Number(inv.totalAmount || 0).toLocaleString('en-IN')}</span>
+                {Number(inv.balanceDue || 0) > 0 && (
+                  <span className="text-[10px] text-amber-600 font-semibold block">
+                    Bal: ₹{Number(inv.balanceDue).toLocaleString('en-IN')}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // 5. Payment list (GET_PAYMENT_HISTORY)
+  const paymentList = result.payments || (Array.isArray(result) ? result : null);
+  if (paymentList && Array.isArray(paymentList)) {
+    if (paymentList.length === 0) {
+      return (
+        <div className="mt-2 p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-slate-400" />
+          <span>No payment records found.</span>
+        </div>
+      );
+    }
+    return (
+      <div className="mt-3 space-y-2">
+        <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+          Payment Transactions ({paymentList.length}):
+        </div>
+        <div className="space-y-1.5 max-h-56 overflow-y-auto">
+          {paymentList.map((p, idx) => (
+            <div key={idx} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-900">{p.invoice?.clientName || 'Payment'}</span>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                    p.status === 'SUCCEEDED' ? 'bg-emerald-100 text-emerald-800' :
+                    p.status === 'FAILED' ? 'bg-rose-100 text-rose-800' :
+                    'bg-amber-100 text-amber-800'
+                  }`}>
+                    {p.status}
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  {p.invoice?.invoiceNumber && <span className="font-mono mr-2">Inv: {p.invoice.invoiceNumber}</span>}
+                  <span>Via {p.provider || 'Gateway'} • {new Date(p.createdAt || p.paymentDate).toLocaleDateString('en-IN')}</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="font-bold text-emerald-600 text-sm">₹{Number(p.amount || 0).toLocaleString('en-IN')}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // 6. Single Invoice Status / Details (GET_INVOICE_STATUS, GET_OUTSTANDING_BALANCE, GET_INVOICE)
+  if (result.invoiceNumber || result.invoiceId || (result.status && result.balanceDue !== undefined)) {
+    return (
+      <div className="mt-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-emerald-600" />
+            <span className="font-mono font-bold text-slate-900 text-sm">{result.invoiceNumber || result.invoiceId}</span>
+          </div>
+          {result.status && (
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+              result.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' :
+              result.status === 'OVERDUE' ? 'bg-rose-100 text-rose-800' :
+              'bg-amber-100 text-amber-800'
+            }`}>
+              {result.status}
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-3 gap-2 pt-1 text-center">
+          <div className="bg-white p-2 rounded border border-slate-200">
+            <span className="text-[10px] text-slate-500 block">Total</span>
+            <span className="font-bold text-slate-900">₹{Number(result.totalAmount || 0).toLocaleString('en-IN')}</span>
+          </div>
+          <div className="bg-white p-2 rounded border border-slate-200">
+            <span className="text-[10px] text-slate-500 block">Paid</span>
+            <span className="font-bold text-emerald-600">₹{Number(result.paidAmount || 0).toLocaleString('en-IN')}</span>
+          </div>
+          <div className="bg-white p-2 rounded border border-slate-200">
+            <span className="text-[10px] text-slate-500 block">Balance Due</span>
+            <span className="font-bold text-amber-600">₹{Number(result.balanceDue || 0).toLocaleString('en-IN')}</span>
+          </div>
+        </div>
+        {result.clientName && (
+          <div className="text-[11px] text-slate-500 pt-1">
+            Client: <strong className="text-slate-700">{result.clientName}</strong>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // 7. Message or Follow-up Draft
+  if (result.type === 'PAYMENT_FOLLOWUP_DRAFT' || result.type === 'CLIENT_MESSAGE_DRAFT') {
+    return (
+      <div className="mt-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+        <div className="flex items-center gap-2 font-bold text-slate-800 text-xs border-b border-slate-200 pb-2">
+          <FileText className="w-4 h-4 text-blue-600" />
+          <span>Prepared Message Draft</span>
+        </div>
+        {result.recipient && (
+          <div className="text-[11px] text-slate-600">
+            Recipient: <strong className="text-slate-900">{result.recipient}</strong>
+          </div>
+        )}
+        {result.subject && (
+          <div className="text-[11px] text-slate-600">
+            Subject: <strong className="text-slate-900">{result.subject}</strong>
+          </div>
+        )}
+        <div className="p-2.5 bg-white rounded-lg border border-slate-200 text-slate-700 font-sans italic text-xs whitespace-pre-wrap">
+          {result.message}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+};
 
 export const AIAssistantPage = () => {
   const { user, activeWorkspace } = useAuth();
@@ -44,7 +386,6 @@ export const AIAssistantPage = () => {
   const [isEditingDraft, setIsEditingDraft] = useState(false);
   const [editedDraft, setEditedDraft] = useState(null);
   const [executingAction, setExecutingAction] = useState(false);
-  const [conversationId, setConversationId] = useState(null);
   const [activeCategory, setActiveCategory] = useState('all');
 
   const messagesEndRef = useRef(null);
@@ -60,7 +401,7 @@ export const AIAssistantPage = () => {
     scrollToBottom();
   }, [messages, activeDraft, isEditingDraft]);
 
-  // Voice recording logic with fallback
+  // Voice recording logic
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -74,7 +415,13 @@ export const AIAssistantPage = () => {
       };
 
       mediaRecorderRef.current.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: mediaRecorderRef.current?.mimeType || 'audio/webm',
+        });
+        if (audioBlob.size > 700 * 1024) {
+          toast.error('Voice Recording Too Large', 'Please record a shorter message.');
+          return;
+        }
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = async () => {
@@ -110,7 +457,7 @@ export const AIAssistantPage = () => {
     try {
       const res = await aiApi.transcribeVoice({
         audio: audioBase64,
-        language: 'hi-IN',
+        language: 'unknown',
       });
       if (res.success && res.data.transcript) {
         setInputText(res.data.transcript);
@@ -157,16 +504,42 @@ export const AIAssistantPage = () => {
         } else if (data.status === 'executed') {
           if (data.operation === 'GET_DASHBOARD_SUMMARY') {
             const m = data.result?.metrics?.financial || {};
-            content = `📊 **Dashboard Summary**\n• Total Invoiced: ₹${Number(m.totalInvoicedAmount || 0).toLocaleString('en-IN')}\n• Total Collected: ₹${Number(m.totalCapturedAmount || 0).toLocaleString('en-IN')}\n• Outstanding Balance: ₹${Number(m.totalOutstandingAmount || 0).toLocaleString('en-IN')}`;
+            content = `📊 **Business Summary retrieved.** Here is your current performance overview:`;
+          } else if (data.operation === 'GET_PAYMENT_SUMMARY') {
+            const total = Number(data.result?.totalCollected || 0).toLocaleString('en-IN');
+            content = `💰 **Payment Summary for ${data.result?.period || 'the requested period'}:**\nYou collected **₹${total}** across ${data.result?.paymentCount || 0} transaction(s).`;
+          } else if (data.operation === 'GET_CLIENT_PAYMENT_SUMMARY') {
+            const clientName = data.result?.client?.name || 'Client';
+            const paid = Number(data.result?.summary?.totalPaid || 0).toLocaleString('en-IN');
+            const bal = Number(data.result?.summary?.totalOutstanding || 0).toLocaleString('en-IN');
+            content = `👤 **Client Financial Summary for ${clientName}:**\nTotal Paid: **₹${paid}** | Outstanding: **₹${bal}**`;
+          } else if (data.operation === 'LIST_PENDING_INVOICES') {
+            const count = data.result?.invoices?.length ?? (Array.isArray(data.result) ? data.result.length : 0);
+            content = count > 0
+              ? `📋 **Pending Invoices:** Found ${count} invoice(s) awaiting payment:`
+              : `✅ **No pending invoices found.** All invoices are clear!`;
+          } else if (data.operation === 'LIST_OVERDUE_INVOICES') {
+            const count = data.result?.invoices?.length ?? (Array.isArray(data.result) ? data.result.length : 0);
+            content = count > 0
+              ? `⚠️ **Overdue Invoices:** Found ${count} invoice(s) past due date:`
+              : `🎉 **No overdue invoices found!** All active invoices are within their payment terms.`;
+          } else if (data.operation === 'LIST_INVOICES' || data.operation === 'GET_CLIENT_INVOICES') {
+            const count = data.result?.invoices?.length ?? (Array.isArray(data.result) ? data.result.length : 0);
+            content = count > 0
+              ? `📄 **Invoice Records:** Found ${count} invoice(s):`
+              : `📄 No matching invoices found.`;
+          } else if (data.operation === 'GET_INVOICE_STATUS' || data.operation === 'GET_OUTSTANDING_BALANCE') {
+            const inv = data.result || {};
+            content = `📄 **Invoice ${inv.invoiceNumber || inv.invoiceId}:** Status is **${inv.status}** with balance due of **₹${Number(inv.balanceDue || 0).toLocaleString('en-IN')}**.`;
           } else if (data.operation === 'CREATE_INVOICE_DRAFT') {
             content = `✅ **Invoice Draft Created!**\nInvoice **${data.result?.invoiceNumber}** for ₹${Number(data.result?.totalAmount || 0).toLocaleString('en-IN')} has been generated in your account.`;
           } else if (data.operation === 'SEND_INVOICE') {
-            content = `📧 **Invoice Sent!** Invoice has been dispatched to the client.`;
+            content = `📧 **Invoice Sent!** The invoice has been dispatched to the client.`;
           } else if (data.operation === 'CANCEL_INVOICE') {
-            content = `🚫 **Invoice Cancelled!** The invoice was cancelled.`;
+            content = `🚫 **Invoice Cancelled!** The invoice was marked as cancelled.`;
           } else if (data.operation === 'GET_PAYMENT_HISTORY') {
-            const count = data.result?.payments?.length || 0;
-            content = `💳 **Payment History**: Found ${count} payment records.`;
+            const count = data.result?.payments?.length ?? (Array.isArray(data.result) ? data.result.length : 0);
+            content = `💳 **Payment History:** Retrieved ${count} transaction record(s):`;
           } else {
             content = `✅ Action **${data.operation}** completed successfully.`;
           }
@@ -210,7 +583,11 @@ export const AIAssistantPage = () => {
       }
     } catch (err) {
       console.error('AI chat error:', err);
-      toast.error('AI Processing Error', err.message || 'Error processing request.');
+      const requestSuffix = err.requestId ? ` (Request ID: ${err.requestId})` : '';
+      toast.error(
+        'AI Processing Error',
+        `${err.message || 'Error processing request.'}${requestSuffix}`,
+      );
       setMessages((prev) => [
         ...prev,
         {
@@ -332,7 +709,7 @@ export const AIAssistantPage = () => {
     { label: 'Check Month Revenue', text: 'How much money did I collect this month?', cat: 'analytics' },
     { label: 'Show Pending Invoices', text: 'Show my pending invoices', cat: 'analytics' },
     { label: 'Check Overdue Accounts', text: 'Which clients have overdue payments?', cat: 'analytics' },
-    { label: 'Cloud Architecture Invoice', text: 'Create ₹45,000 invoice for Cloud Architecture & Security Audit', cat: 'billing' },
+    { label: 'Business Summary', text: 'Give me my business summary', cat: 'analytics' },
   ];
 
   const filteredPresets = activeCategory === 'all'
@@ -393,46 +770,34 @@ export const AIAssistantPage = () => {
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex gap-3 max-w-3xl ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''
-              }`}
+            className={`flex gap-3 max-w-3xl ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''}`}
           >
             {/* Avatar */}
             <div
-              className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-xs font-bold ${msg.role === 'user'
+              className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-xs font-bold ${
+                msg.role === 'user'
                   ? 'bg-[#1C1D22] text-white'
                   : 'bg-[#CFDDC8] text-[#1A3018]'
-                }`}
+              }`}
             >
               {msg.role === 'user' ? (user?.name?.slice(0, 1) || 'U') : <Sparkles className="w-4 h-4" />}
             </div>
 
             {/* Bubble */}
             <div
-              className={`rounded-2xl p-4 text-xs md:text-sm leading-relaxed ${msg.role === 'user'
+              className={`rounded-2xl p-4 text-xs md:text-sm leading-relaxed ${
+                msg.role === 'user'
                   ? 'bg-[#1C1D22] text-white rounded-tr-none shadow-xs'
                   : 'bg-white border border-[#E8E4DC] text-[#1C1D22] rounded-tl-none shadow-xs'
-                }`}
+              }`}
             >
               <div className="whitespace-pre-wrap font-sans">
                 {msg.content}
               </div>
 
-              {/* Tool Result Cards (if any) */}
-              {msg.toolResult && Array.isArray(msg.toolResult) && (
-                <div className="mt-3 space-y-2 pt-2 border-t border-slate-800">
-                  {msg.toolResult.map((item, idx) => (
-                    <div key={idx} className="p-2.5 rounded-xl bg-charcoal-950 border border-slate-800 flex items-center justify-between text-xs">
-                      <div>
-                        <span className="font-mono text-emerald-400 font-bold">{item.invoiceNumber}</span>
-                        <span className="text-slate-400 ml-2">Client: {item.client}</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="font-bold text-slate-200">₹{Number(item.balanceDue).toLocaleString('en-IN')}</span>
-                        <span className="text-[10px] text-amber-400 ml-2">Due: {new Date(item.dueDate).toLocaleDateString('en-IN')}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              {/* Structured Workflow Result Card (Invoices, Overdue, Payments, Dashboard) */}
+              {msg.result && (
+                <WorkflowResultCard operation={msg.operation} result={msg.result} />
               )}
             </div>
           </div>
@@ -450,10 +815,11 @@ export const AIAssistantPage = () => {
                 <button
                   type="button"
                   onClick={() => setIsEditingDraft(!isEditingDraft)}
-                  className={`text-xs px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition ${isEditingDraft
+                  className={`text-xs px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition ${
+                    isEditingDraft
                       ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 font-bold'
                       : 'bg-charcoal-800 border-slate-700 text-slate-300 hover:text-white'
-                    }`}
+                  }`}
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   {isEditingDraft ? 'Done Editing' : 'Edit Values'}
@@ -637,10 +1003,11 @@ export const AIAssistantPage = () => {
           <button
             type="button"
             onClick={isRecording ? stopRecording : startRecording}
-            className={`p-3 rounded-xl border transition flex items-center justify-center shrink-0 ${isRecording
+            className={`p-3 rounded-xl border transition flex items-center justify-center shrink-0 ${
+              isRecording
                 ? 'bg-rose-500 text-white border-rose-400 animate-pulse shadow-lg shadow-rose-500/40'
                 : 'bg-charcoal-800 hover:bg-charcoal-700 text-slate-300 border-slate-700/60'
-              }`}
+            }`}
             title={isRecording ? 'Click to stop voice recording' : 'Click to speak in Hindi/English'}
           >
             {isRecording ? <MicOff className="w-5 h-5 text-white" /> : <Mic className="w-5 h-5 text-emerald-400" />}

@@ -11,6 +11,7 @@ import {
 } from './middleware/error.middleware.js';
 
 import assistantRoutes from './modules/assistant/assistant.routes.js';
+import voiceRoutes from './modules/voice/voice.routes.js';
 
 export const createApp = ({ assistantRouter = assistantRoutes } = {}) => {
   const app = express();
@@ -28,6 +29,7 @@ export const createApp = ({ assistantRouter = assistantRoutes } = {}) => {
   );
 
   app.use('/api/assistant', assistantRouter);
+  app.use('/api/voice', voiceRoutes);
   app.use('/api/health', healthRoutes);
 
   app.use(notFoundMiddleware);

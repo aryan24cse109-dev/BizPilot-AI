@@ -7,6 +7,7 @@ import { createRazorpayOrder, getRazorpayPayment } from "../../integrations/razo
 import { verifyCheckoutSignature } from "../../integrations/razorpay/razorpay.signature.js";
 import { toMinorUnits } from "../../utils/currency.js";
 import { getPagination, paginationResult } from "../../utils/pagination.js";
+import { reconcileSuccessfulPayment } from "./payment-reconciliation.service.js";
 
 const paymentInclude = {
   invoice: {
@@ -246,40 +247,12 @@ export async function verifyPayment(user, input) {
 }
 
 async function applyCapturedPayment(tx, payment, providerPayment) {
-  assertMoneyMatch(providerPayment.amount, payment.amount, providerPayment.currency, payment.currency);
-  if (payment.providerPaymentId && payment.providerPaymentId !== providerPayment.id) {
-    throw new ApiError(409, "A different provider payment is already associated with this attempt.");
-  }
-  if (payment.status === "SUCCEEDED" || payment.status === "REFUNDED") return;
-
-  await tx.payment.update({
-    where: { id: payment.id },
-    data: {
-      status: "SUCCEEDED",
-      providerPaymentId: providerPayment.id,
-      capturedAt: new Date(),
-      failureReason: null,
-      metadata: providerPayment,
-    },
-  });
-
-  const successful = await tx.payment.aggregate({
-    where: { invoiceId: payment.invoiceId, status: "SUCCEEDED" },
-    _sum: { amount: true },
-  });
-  const invoice = await tx.invoice.findUnique({ where: { id: payment.invoiceId } });
-  const paid = new Decimal(successful._sum.amount ?? 0);
-  const total = new Decimal(invoice.totalAmount);
-  const balance = Decimal.max(0, total.minus(paid));
-  const status = balance.isZero() ? "PAID" : "PARTIALLY_PAID";
-  await tx.invoice.update({
-    where: { id: invoice.id },
-    data: {
-      amountPaid: paid.toFixed(2),
-      balanceDue: balance.toFixed(2),
-      status,
-      paidAt: balance.isZero() ? new Date() : null,
-    },
+  await reconcileSuccessfulPayment(tx, {
+    payment,
+    providerPaymentId: providerPayment.id,
+    providerAmount: providerPayment.amount,
+    providerCurrency: providerPayment.currency,
+    metadata: providerPayment,
   });
 }
 
@@ -395,4 +368,228 @@ export async function listInvoicePayments(user, invoiceId, filters = {}) {
     throw new ApiError(404, "Invoice not found.");
   }
   return listPayments(user, { ...filters, invoiceId });
+}
+
+/**
+ * Aggregate payment summary for the authenticated business user.
+ * Returns verified successful payments grouped by period and provider.
+ *
+ * @param {object} user - Authenticated user (must have .id and .accountCategory)
+ * @param {object} filters - Optional: { period: 'month'|'lastMonth'|'year'|'all', startDate, endDate }
+ */
+export async function getPaymentSummary(user, filters = {}) {
+  const now = new Date();
+  let startDate = filters.startDate ? new Date(filters.startDate) : null;
+  let endDate   = filters.endDate   ? new Date(filters.endDate)   : null;
+  let periodLabel = "All time";
+
+  if (startDate && Number.isNaN(startDate.getTime())) {
+    throw new ApiError(400, "startDate must be a valid date.");
+  }
+  if (endDate && Number.isNaN(endDate.getTime())) {
+    throw new ApiError(400, "endDate must be a valid date.");
+  }
+  if (startDate && endDate && startDate > endDate) {
+    throw new ApiError(400, "startDate must be before endDate.");
+  }
+
+  if (!startDate && !endDate) {
+    const period = (filters.period || "month").toLowerCase();
+    if (period === "month" || period === "thismonth") {
+      startDate   = new Date(now.getFullYear(), now.getMonth(), 1);
+      endDate     = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      periodLabel = `${now.toLocaleString("en-IN", { month: "long" })} ${now.getFullYear()}`;
+    } else if (period === "lastmonth") {
+      const lm   = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+      const lmYr = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+      startDate   = new Date(lmYr, lm, 1);
+      endDate     = new Date(lmYr, lm + 1, 0, 23, 59, 59, 999);
+      periodLabel = `${new Date(lmYr, lm, 1).toLocaleString("en-IN", { month: "long" })} ${lmYr}`;
+    } else if (period === "year" || period === "thisyear") {
+      startDate   = new Date(now.getFullYear(), 0, 1);
+      endDate     = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+      periodLabel = `${now.getFullYear()}`;
+    }
+    // "all" => no date filter, periodLabel stays "All time"
+  }
+
+  const baseWhere = { businessUserId: user.id, status: "SUCCEEDED" };
+  if (startDate || endDate) {
+    baseWhere.capturedAt = {
+      ...(startDate ? { gte: startDate } : {}),
+      ...(endDate ? { lte: endDate } : {}),
+    };
+  }
+
+  const [payments, outstandingResult] = await prisma.$transaction([
+    prisma.payment.findMany({
+      where: baseWhere,
+      select: {
+        id: true,
+        amount: true,
+        currency: true,
+        provider: true,
+        capturedAt: true,
+        invoice: { select: { invoiceNumber: true, clientName: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.invoice.aggregate({
+      where: {
+        businessUserId: user.id,
+        status: { in: ["SENT", "PARTIALLY_PAID"] },
+      },
+      _sum: { balanceDue: true },
+      _count: { id: true },
+    }),
+  ]);
+
+  const byProvider = {};
+  let totalCollected = new Decimal(0);
+  for (const p of payments) {
+    const amt  = new Decimal(p.amount.toString());
+    totalCollected = totalCollected.plus(amt);
+    const prov = p.provider || "UNKNOWN";
+    byProvider[prov] = (byProvider[prov] ?? new Decimal(0)).plus(amt);
+  }
+
+  const providerBreakdown = Object.entries(byProvider).map(([provider, total]) => ({
+    provider,
+    totalCollected: total.toFixed(2),
+  }));
+
+  const currency = payments[0]?.currency ?? "INR";
+
+  return {
+    period: periodLabel,
+    totalCollected: totalCollected.toFixed(2),
+    currency,
+    paymentCount: payments.length,
+    providerBreakdown,
+    outstanding: {
+      total:        (outstandingResult._sum.balanceDue ?? 0).toString(),
+      invoiceCount: outstandingResult._count.id,
+    },
+    recentPayments: payments.slice(0, 10).map((p) => ({
+      id:            p.id,
+      amount:        p.amount.toString(),
+      currency:      p.currency,
+      provider:      p.provider,
+      date:          p.capturedAt,
+      invoiceNumber: p.invoice?.invoiceNumber ?? null,
+      clientName:    p.invoice?.clientName    ?? null,
+    })),
+  };
+}
+
+/**
+ * Aggregate payment summary for a specific client of the authenticated business user.
+ *
+ * @param {object} user    - Authenticated business user
+ * @param {object} filters - { clientName?, clientEmail? }
+ */
+export async function getClientPaymentSummary(user, filters = {}) {
+  const { clientName, clientEmail } = filters;
+
+  if (!clientName && !clientEmail) {
+    throw new ApiError(400, "clientName or clientEmail is required for a client payment summary.");
+  }
+
+  const invoiceWhere = { businessUserId: user.id };
+  if (clientEmail && clientName) {
+    invoiceWhere.clientEmail = { equals: clientEmail, mode: "insensitive" };
+    invoiceWhere.clientName = { contains: clientName, mode: "insensitive" };
+  } else if (clientEmail) {
+    invoiceWhere.clientEmail = { equals: clientEmail, mode: "insensitive" };
+  } else {
+    invoiceWhere.clientName = { contains: clientName, mode: "insensitive" };
+  }
+
+  const invoices = await prisma.invoice.findMany({
+    where: invoiceWhere,
+    select: {
+      id: true,
+      invoiceNumber: true,
+      clientName: true,
+      clientEmail: true,
+      totalAmount: true,
+      paidAmount: true,
+      balanceDue: true,
+      status: true,
+      currency: true,
+    },
+  });
+
+  if (invoices.length === 0) {
+    throw new ApiError(
+      404,
+      `No invoices found for "${clientName ?? clientEmail}". Please verify the name or email.`,
+    );
+  }
+
+  const invoiceIds = invoices.map((i) => i.id);
+  const payments   = await prisma.payment.findMany({
+    where: { businessUserId: user.id, invoiceId: { in: invoiceIds }, status: "SUCCEEDED" },
+    select: {
+      id: true,
+      amount: true,
+      currency: true,
+      provider: true,
+      createdAt: true,
+      invoice: { select: { invoiceNumber: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  let totalBilled      = new Decimal(0);
+  let totalOutstanding = new Decimal(0);
+  const byProvider = {};
+
+  for (const inv of invoices) {
+    totalBilled      = totalBilled.plus(new Decimal(inv.totalAmount.toString()));
+    totalOutstanding = totalOutstanding.plus(new Decimal(inv.balanceDue.toString()));
+  }
+  let totalPaid = new Decimal(0);
+  for (const payment of payments) {
+    totalPaid = totalPaid.plus(new Decimal(payment.amount.toString()));
+    byProvider[payment.provider] = (byProvider[payment.provider] ?? new Decimal(0))
+      .plus(new Decimal(payment.amount.toString()));
+  }
+
+  const currency           = invoices[0]?.currency  ?? "INR";
+  const resolvedClientName = invoices[0]?.clientName ?? clientName ?? clientEmail;
+
+  return {
+    client: {
+      name:  resolvedClientName,
+      email: invoices[0]?.clientEmail ?? clientEmail ?? null,
+    },
+    summary: {
+      totalBilled:      totalBilled.toFixed(2),
+      totalPaid:        totalPaid.toFixed(2),
+      totalOutstanding: totalOutstanding.toFixed(2),
+      currency,
+      invoiceCount: invoices.length,
+      paymentCount: payments.length,
+      providerBreakdown: Object.entries(byProvider).map(([provider, total]) => ({
+        provider,
+        totalPaid: total.toFixed(2),
+      })),
+    },
+    invoices: invoices.map((inv) => ({
+      invoiceNumber: inv.invoiceNumber,
+      status:        inv.status,
+      totalAmount:   inv.totalAmount.toString(),
+      paidAmount:    inv.paidAmount.toString(),
+      balanceDue:    inv.balanceDue.toString(),
+    })),
+    recentPayments: payments.slice(0, 10).map((p) => ({
+      id:            p.id,
+      amount:        p.amount.toString(),
+      currency:      p.currency,
+      provider:      p.provider,
+      date:          p.createdAt,
+      invoiceNumber: p.invoice?.invoiceNumber ?? null,
+    })),
+  };
 }

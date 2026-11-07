@@ -34,6 +34,7 @@ import { ClientInvoiceDetailsPage } from './pages/client/ClientInvoiceDetailsPag
 import { ClientPaymentHistoryPage } from './pages/client/ClientPaymentHistoryPage.jsx';
 import { ClientProfilePage } from './pages/client/ClientProfilePage.jsx';
 import { AcceptInvitationPage } from './pages/AcceptInvitationPage.jsx';
+import { DummyPaymentPage } from './pages/DummyPaymentPage.jsx';
 
 import { LoadingSpinner } from './components/common/LoadingSpinner.jsx';
 
@@ -190,6 +191,7 @@ export function App() {
 
                   {/* Direct Invitation Acceptance Link */}
                   <Route path="/invitations/accept" element={<AcceptInvitationPage />} />
+                  <Route path="/demo-payment/:token" element={<DummyPaymentPage />} />
 
                   {/* Root redirect */}
                   <Route path="/" element={<RootRedirect />} />

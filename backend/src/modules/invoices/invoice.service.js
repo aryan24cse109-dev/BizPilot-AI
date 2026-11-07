@@ -427,6 +427,16 @@ export async function getInvoice(user, invoiceId) {
   return invoice;
 }
 
+export async function getInvoiceByNumber(user, invoiceNumber) {
+  const invoices = await prisma.invoice.findMany({
+    where: { invoiceNumber },
+    include: invoiceInclude,
+  });
+  const invoice = invoices.find((candidate) => canAccessInvoice(candidate, user));
+  if (!invoice) throw new ApiError(404, "Invoice not found.");
+  return getInvoice(user, invoice.id);
+}
+
 export async function updateInvoice(user, invoiceId, input) {
   ensureBusiness(user);
 
