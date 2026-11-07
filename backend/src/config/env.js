@@ -38,6 +38,7 @@ const envSchema = z.object({
     .optional(),
 
   GOOGLE_CLIENT_ID: z.string().default(""),
+  GOOGLE_CLIENT_SECRET: z.string().default(""),
 
   JWT_SECRET: z.string().min(32, "JWT_SECRET must contain at least 32 characters"),
 
